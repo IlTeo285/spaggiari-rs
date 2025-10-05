@@ -64,9 +64,10 @@ pub struct AccountInfo {
 pub fn test_session_token(
     client: &Client,
     session_id: &str,
+    webidentity: &str,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     println!("🧪 Testando il token PHPSESSID: {}", session_id);
-    match get_backeca(client, session_id) {
+    match get_backeca(client, session_id, webidentity) {
         Ok(bacheca) => {
             let circolari_nuove = if let Some(ref msg_new) = bacheca.msg_new {
                 msg_new.len()

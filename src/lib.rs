@@ -52,6 +52,7 @@ pub fn create_client() -> Result<Client, reqwest::Error> {
 pub struct SpaggiariSession {
     pub client: Client,
     pub session_token: String,
+    identity: String
 }
 
 impl SpaggiariSession {
@@ -80,6 +81,7 @@ impl SpaggiariSession {
         Ok(SpaggiariSession {
             client,
             session_token,
+            identity: username.to_string(),
         })
     }
 
@@ -102,15 +104,16 @@ impl SpaggiariSession {
     /// ```
     pub fn from_token(session_token: String) -> Result<Self, Box<dyn std::error::Error>> {
         let client = create_client()?;
-
+        let username = std::env::var("SPAGGIARI_USERNAME")?;
         // Verifica che il token sia valido
-        if !test_session_token(&client, &session_token)? {
+        if !test_session_token(&client, &session_token, &username)? {
             return Err("Token di sessione non valido".into());
         }
 
         Ok(SpaggiariSession {
             client,
             session_token,
+            identity: username
         })
     }
 
@@ -120,7 +123,7 @@ impl SpaggiariSession {
     ///
     /// `true` se il token è valido, `false` altrimenti
     pub fn is_valid(&self) -> Result<bool, Box<dyn std::error::Error>> {
-        test_session_token(&self.client, &self.session_token)
+        test_session_token(&self.client, &self.session_token, &self.identity)
     }
 
     /// Ottiene la bacheca personale
@@ -137,7 +140,7 @@ impl SpaggiariSession {
     /// println!("Comunicazioni lette: {}", bacheca.read.len());
     /// ```
     pub fn get_bacheca(&self) -> Result<Bacheca, Box<dyn std::error::Error>> {
-        Ok(get_backeca(&self.client, &self.session_token)?)
+        Ok(get_backeca(&self.client, &self.session_token, &self.identity)?)
     }
 
     /// Ottiene una comunicazione specifica
@@ -157,6 +160,7 @@ impl SpaggiariSession {
             &self.client,
             &self.session_token,
             circolare_id,
+            ""
         )?)
     }
 

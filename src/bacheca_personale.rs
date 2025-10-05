@@ -6,6 +6,7 @@ use scraper::{Html, Selector};
 use serde::Deserialize;
 use std::fs::File;
 use std::io::copy;
+use log::{debug, error};
 
 const url_bacheca: &str = "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php";
 const url_comunicazioni: &str =
@@ -174,7 +175,7 @@ pub fn download_file(
 ) -> Result<String, anyhow::Error> {
     // Controlla se il file già esiste
     if std::path::Path::new(destination_path).exists() {
-        println!("📁 File già esistente, skip download: {}", destination_path);
+        debug!("📁 File già esistente, skip download: {}", destination_path);
         return Ok(destination_path.to_string());
     }
 
@@ -204,10 +205,10 @@ pub fn download_file(
 
         let mut file = File::create(&filepath)?;
         copy(&mut response, &mut file)?;
-        println!("📥 File scaricato: {}", filepath);
+        debug!("📥 File scaricato: {}", filepath);
         Ok(filepath)
     } else {
-        println!(
+        error!(
             "❌ Download fallito per {}: Status {}",
             url,
             response.status()
@@ -244,19 +245,19 @@ pub fn download_allegati(
     Ok(())
 }
 
-pub fn get_backeca(client: &Client, session_id: &str) -> Result<Bacheca, anyhow::Error> {
+pub fn get_backeca(client: &Client, session_id: &str, webidentity: &str) -> Result<Bacheca, anyhow::Error> {
     let response = client
         .get(url_bacheca)
         .query(&[("action", "get_comunicazioni"), ("ncna", "1")]) // Aggiunti i form data come query parameters
         .header(
             "Cookie",
-            format!("PHPSESSID={}; webidentity=G13070983V", session_id),
+            format!("PHPSESSID={}; webidentity={}", session_id, webidentity),
         ) //TODO get from args
         .send()?;
 
     let status = response.status();
 
-    println!("📊 Risposta bacheca - Status: {}", status);
+    debug!("📊 Risposta bacheca - Status: {}", status);
 
     if status.is_success() {
         let text = response.text()?;
@@ -268,12 +269,12 @@ pub fn get_backeca(client: &Client, session_id: &str) -> Result<Bacheca, anyhow:
                 Ok(bacheca)
             }
             Err(e) => {
-                println!("Deserialize error {}", e.to_string());
+                error!("Deserialize error {}", e.to_string());
                 Err(e.into())
             }
         }
     } else {
-        println!("❌ Il token non sembra funzionare. Status: {}", status);
+        error!("❌ Il token non sembra funzionare. Status: {}", status);
         Err(anyhow::anyhow!("Il token non sembra funzionare"))
     }
 }
@@ -306,19 +307,20 @@ pub fn get_comunicazioni(
     client: &Client,
     session_id: &str,
     comm_id: &str,
+    webidentity: &str
 ) -> Result<Comunicazione, anyhow::Error> {
     let response = client
         .get(url_comunicazioni)
         .query(&[("action", "risposta_com"), ("com_id", comm_id)]) // Aggiunti i form data come query parameters
         .header(
             "Cookie",
-            format!("PHPSESSID={}; webidentity=G13070983V", session_id),
+            format!("PHPSESSID={}; webidentity={}", session_id, webidentity),
         ) //TODO get from args
         .send()?;
 
     let status = response.status();
 
-    println!("📊 Risposta bacheca - Status: {}", status);
+    debug!("📊 Risposta bacheca - Status: {}", status);
 
     if status.is_success() {
         let text = response.text()?;
@@ -329,7 +331,7 @@ pub fn get_comunicazioni(
 
         // Estrai il testo della comunicazione
         let testo = extract_testo_comunicazione(&text)?;
-        println!("📝 Testo comunicazione: {}", testo);
+        debug!("📝 Testo comunicazione: {}", testo);
 
         Ok(Comunicazione {
             testo,
@@ -342,7 +344,7 @@ pub fn get_comunicazioni(
                 .collect(),
         })
     } else {
-        println!("❌ Il token non sembra funzionare. Status: {}", status);
+        error!("❌ Il token non sembra funzionare. Status: {}", status);
         Err(anyhow::anyhow!("Il token non sembra funzionare"))
     }
 }

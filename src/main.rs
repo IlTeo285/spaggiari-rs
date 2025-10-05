@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Prova a usare il token esistente
         println!("🧪 Test del token esistente...");
         let client = create_client()?;
-        match test_session_token(&client, existing_token) {
+        match test_session_token(&client, existing_token, &username) {
             Ok(true) => {
                 println!("✅ Token esistente ancora valido! Uso quello.");
 
