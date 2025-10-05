@@ -1,0 +1,109 @@
+tipo,id,codice,titolo,testo,data_start,data_stop,tipo_com,tipo_com_filtro,tipo_com_desc,nome_file,richieste,id_relazione,conf_lettura,flag_risp,testo_risp,file_risp,flag_accettazione,modificato,evento_data
+read,840091,187,Circ. n. 93 Circolare assicurazione integrativa anno scolastico 2025/2026,Circ. n. 93 Circolare assicurazione integrativa anno scolastico 2025/2026,2025-10-03,2026-08-31,4,4,Comunicazione - Circolare,,0000,3525608,letto,0,,,0,0,03-10-2025
+read,835481,185,Circ. n. 91 DIVIETO DI INTRODUZIONE E CONSUMO DI BEVANDE E ALIMENTI NON CONFORMI AI PRINCIPI DELL’EDUCAZIONE ALIMENTARE,Circ. n. 91 DIVIETO DI INTRODUZIONE E CONSUMO DI BEVANDE E ALIMENTI NON CONFORMI AI PRINCIPI DELL’EDUCAZIONE ALIMENTARE,2025-10-03,2026-08-31,4,4,Comunicazione - Circolare,,0000,3492986,letto,0,,,0,0,03-10-2025
+read,775099,179,"SCIOPERO del 03-10-2025 Cgil e USB in difesa di Global summud Flotilla, dei valori costituzionali e per Gaza ","SCIOPERO del 03-10-2025 Cgil e USB in difesa di Global summud Flotilla, dei valori costituzionali e per Gaza ",2025-10-02,2025-12-31,3,3,Comunicazione - News,,0000,3221850,letto,0,,,0,0,02-10-2025
+read,782694,179,Indizione Sciopero Generale 3 Ottobre 2025 UNICOBAS,Indizione Sciopero Generale 3 Ottobre 2025 UNICOBAS,2025-10-02,2025-12-31,3,3,Comunicazione - News,,0000,3280198,letto,0,,,0,0,02-10-2025
+read,781231,180,Orari di trasporto per venerdì 3 ottobre 2025,"In riferimento alle vostre precedenti comunicazioni, si allega in pdf il prospetto con le modifiche gli orari di trasporto venerdì 3 ottobre 2025.
+
+Si prega di prenderne visione.
+
+Grazie per la collaborazione.",2025-10-02,2025-11-30,3,3,Comunicazione - News,,0000,3265210,letto,0,,,0,0,02-10-2025
+read,742371,177,Variazione primi piatti freddi con primi piatti caldi il 02/10/25 e il 10/10/25,"Buongiorno,
+la Società Ames s.p.a. ci comunica che, come di consueto i primi piatti freddi del menù estivo verranno sostituiti o modificati con preparazioni calde come sotto specificato:
+
+domani giovedì 02/10/25 la pasta fredda al pesto con pomodorini sarà sostituita con pasta al pesto calda;
+
+venerdì 10/10/25 l’insalata di riso verrà sostituita con riso alla parmigiana.
+
+Si chiede di dare la massima diffusione della presente ai genitori.
+
+Cordiali saluti.
+
+",2025-10-01,2026-01-31,3,3,Comunicazione - News,,0000,3118147,letto,0,,,0,0,01-10-2025
+read,655936,159,Comparto e Area Istruzione e Ricerca_ Settore Scuola_ sciopero generale per l'intera giornata del 3 ottobre 2025  GAB.TTO DEL MIN.- UFF. UNICO   ,"Con riferimento all’oggetto, si inoltra a fini collaborativi la comunicazione odiernamente trasmessa a tutti gli Uffici scolastici regionali.
+
+Si resta a disposizione per ogni eventuale chiarimento e si porgono distinti saluti",2025-09-29,2025-10-06,3,3,Comunicazione - News,,0000,2868401,letto,0,,,0,0,29-09-2025
+read,647611,156,Circ. n. 78 Proclamazione Sciopero generale dell’intera giornata del 03/10/2025 ,Proclamazione Sciopero generale dell’intera giornata del 03/10/2025 ,2025-09-29,2026-08-31,4,4,Comunicazione - Circolare,,1001,2774890,letto,0,,,0,0,29-09-2025
+read,572530,150,Orari definitivi 2025-2026,"si conferma l'avvio dell'orario definitivo per tutte le scuole di tutti i percorsi, da lunedì 29 settembre.
+Si prega di prenderne visione
+Grazie per la collaborazione.",2025-09-26,2026-08-31,3,3,Comunicazione - News,,0000,2545300,letto,0,,,0,0,26-09-2025
+read,2198,12,Circ. 479 TRASMISSIONE LETTERA ALLE FAMIGLIE E ALLEGATO INFORMATIVO SERVIZIO RISTORAZIONE SCOLASTICA 2025/2026 ,Circ. 479 TRASMISSIONE LETTERA ALLE FAMIGLIE E ALLEGATO INFORMATIVO SERVIZIO RISTORAZIONE SCOLASTICA 2025/2026,2025-08-18,2026-08-31,4,4,Comunicazione - Circolare,,0000,77490,letto,0,,,0,0,18-08-2025
+msg_new,579977,154,Circ. n. 76 VIGILANZA NEI PLESSI GENERALE,Circ. n. 76 VIGILANZA NEI PLESSI GENERALE,2025-09-26,2026-08-31,4,4,Comunicazione - Circolare,,0000,2628263,non_letto,0,,,0,0,26-09-2025
+msg_new,526771,138,Variazione contorno il 25/09/25,"Buongiorno,
+la Società Ames s.p.a ci comunica che, domani giovedì 25/09/25 il contorno carote julienne sarà sostituito con insalata nelle seguenti scuole:
+Primaria Parolari
+
+Si chiede di dare la massima diffusione della presente ai genitori.
+Cordiali saluti.",2025-09-25,2025-10-31,1,1,Comunicazione - Scuola/famiglia,,0000,2368858,non_letto,0,,,0,0,25-09-2025
+msg_new,518421,137,Variazione secondo piatto il 29/09/25,"Buongiorno,
+la Società Ames s.p.a ci comunica che, per un problema di fornitura di uova intere, lunedì 29/09/25 il secondo piatto uovo sodo sarà sostituito con frittata al forno in tutte le scuole. 
+
+Si chiede di dare la massima diffusione della presente ai genitori.
+
+Cordiali saluti.",2025-09-25,2025-10-31,1,1,Comunicazione - Scuola/famiglia,,0000,2357469,non_letto,0,,,0,0,25-09-2025
+msg_new,540467,145,Circ. n. 71  Alunni che usufruiscono dello scuolabus organizzazione - plesso Montalcini , Alunni che usufruiscono dello scuolabus organizzazione - plesso Montalcini ,2025-09-25,2026-08-31,4,4,Comunicazione - Circolare,,1001,2441069,non_letto,0,,,0,0,25-09-2025
+msg_new,540842,147,Variazione secondo piatto del 26/09/25 - Centro Cottura Filzi,"Buongiorno,
+
+la Società Ames s.p.a ci comunica che, per un problema di fornitura presso il centro cottura Filzi, domani venerdì 26/09/25 il secondo piatto previsto sarà sostituito con bocconcini di tacchino a tutte le scuole.
+
+Si chiede di dare la massima diffusione della presente ai genitori.
+
+Cordiali saluti.",2025-09-25,2025-10-31,1,1,Comunicazione - Scuola/famiglia,,0000,2445285,non_letto,0,,,0,0,25-09-2025
+msg_new,533398,139,Circ. n. 67 Referenti di Istituto prevenzione contrasto bullismo e cyberbullismo a.s. 25-26 ,Referenti di Istituto prevenzione contrasto bullismo e cyberbullismo a.s. 25-26 ,2025-09-25,2026-08-31,4,4,Comunicazione - Circolare,,1001,2392550,non_letto,0,,,0,0,25-09-2025
+msg_new,501767,135,Variazione secondo piatto il 24/09/25,"Buongiorno,
+la Società Ames s.p.a ci comunica che, oggi mercoledì 24/09/25 il secondo piatto mousse di ceci con crostini sarà sostituito con mozzarella nelle seguenti scuole:
+Primaria Parolari
+Si chiede di dare la massima diffusione della presente ai genitori.
+
+Cordiali saluti.",2025-09-24,2025-10-31,1,1,Comunicazione - Scuola/famiglia,,0000,2324343,non_letto,0,,,0,0,24-09-2025
+msg_new,362793,118,Circ. n. 58 Richiesta di entrata posticipata/uscita anticipata per alunni – Indicazioni operative,Richiesta di entrata posticipata/uscita anticipata per alunni – Indicazioni operative,2025-09-22,2026-08-31,4,4,Comunicazione - Circolare,,1001,2026640,non_letto,0,,,0,0,22-09-2025
+msg_new,321922,112,Orari di trasporto scolastico per la terza settimana a.s. 2025-2026,"si allega in pdf il prospetto con gli orari di trasporto per la terza settimana dell' anno scolastico 2025-2026, da lunedì 22 a venerdì 26 settembre.
+Cordiali saluti",2025-09-19,2025-10-31,1,1,Comunicazione - Scuola/famiglia,,1001,1824039,non_letto,0,,,0,0,19-09-2025
+msg_new,322834,114,Circ.n. 56 Appendici del patto educativo di corresponsabilità - plessi di scuola primaria,Appendici del patto educativo di corresponsabilità - plessi di scuola primaria,2025-09-19,2026-08-31,4,4,Comunicazione - Circolare,,1001,1834539,non_letto,0,,,0,0,19-09-2025
+msg_new,323045,115,Circ. n 57 Assemblea dei genitori scuola primaria 24-25 settembre 2025 ,Assemblea dei genitori scuola primaria 24-25 settembre 2025 ,2025-09-19,2026-08-31,4,4,Comunicazione - Circolare,,1001,1842700,non_letto,0,,,0,0,19-09-2025
+msg_new,276397,105,Circ. n. 50 Errata corrige circ prot. . 11840 del 17-09-2025 sciopero del 22 settembre ,Errata corrige circ prot. . 11840 del 17-09-2025 sciopero del 22 settembre ,2025-09-18,2026-08-31,4,4,Comunicazione - Circolare,,1001,1635022,non_letto,0,,,0,0,18-09-2025
+msg_new,260425,103,Circ. n. 48 Proclamazione Sciopero generale dell’intera giornata del 22 settembre 2025 delle organizzazioni sindacali .,"Proclamazione Sciopero generale dell’intera giornata del 22 settembre 2025 delle organizzazioni sindacali CUB SGB ADL Varese con adesione CUB SUR e USB, con adesione USB PI sciopero generale personale Comparto e dell’Area Istruzione; CSLE, CONALPE e CONF.SAI. Sciopero generale personale ATA Comparto e Are Istruzione e Ricerca.",2025-09-17,2026-08-31,4,4,Comunicazione - Circolare,,1001,1590383,non_letto,0,,,0,0,17-09-2025
+msg_new,232664,99,Circ. n. 47 Richiesta autorizzazione pasto domestico a.s. 2025/2026,Richiesta autorizzazione pasto domestico a.s. 2025/2026,2025-09-16,2026-08-31,4,4,Comunicazione - Circolare,,1001,1403223,non_letto,0,,,0,0,16-09-2025
+msg_new,193753,91,CIRC 40 XIX Congresso Nazionale AID. Vivere la dislessia: tra opportunità e ostacoli.,XIX Congresso Nazionale AID. Vivere la dislessia: tra opportunità e ostacoli.,2025-09-15,2026-08-31,4,4,Comunicazione - Circolare,,1001,1205017,non_letto,0,,,0,0,15-09-2025
+msg_new,202969,93,CIRC 42 AVVIO MENSA 22 SETTEMBRE 2025,AVVIO MENSA 22 SETTEMBRE 2025,2025-09-15,2026-08-31,4,4,Comunicazione - Circolare,,1001,1223973,non_letto,0,,,0,0,15-09-2025
+msg_new,206932,96,circ. n. 45 partecipazione specialisti glo ,circ. n. 45 partecipazione specialisti glo ,2025-09-15,2026-06-30,null,null,Altro,,0000,1260534,non_letto,0,,,0,0,15-09-2025
+msg_new,179998,85,Orari di trasporto scolastico per la seconda settimana a.s. 2025-2026,"Si allega in pdf il prospetto con gli orari di trasporto per la seconda settimana dell' anno scolastico 2025-2026, da lunedì 15 a venerdì 19 settembre.
+
+Si prega di prenderne visione 
+",2025-09-12,2025-11-30,3,3,Comunicazione - News,,0000,1085858,non_letto,0,,,0,0,12-09-2025
+msg_new,145084,70,Circ. 24 AUGURI DI BUON ANNO SCOLASTICO 2025-2026,Circ. 24 AUGURI DI BUON ANNO SCOLASTICO 2025-2026,2025-09-10,2025-09-17,null,null,Altro,,0000,767209,non_letto,0,,,0,0,10-09-2025
+msg_new,146394,73,CIRC. 12 Somministrazione di farmaci a scuola – Procedura da seguire per i genitori – Indicazioni per il personale anno scolastico 2025/2026,"Circ. 12 Somministrazione di farmaci a scuola – Procedura da seguire per i genitori –
+Indicazioni per il personale anno scolastico 2025/2026",2025-09-10,2025-09-17,null,null,Altro,,0000,775394,non_letto,0,,,0,0,10-09-2025
+msg_new,145848,72,Circ. 26 RACCOLTA SOMME DI DENARO – REGALI O ALTRE UTILITÀ -DISPOSIZIONE NORMATIVE,"Circ. 26 RACCOLTA SOMME DI DENARO – REGALI O ALTRE UTILITÀ
+-DISPOSIZIONE NORMATIVE",2025-09-10,2025-09-17,null,null,Altro,,0000,771815,non_letto,0,,,0,0,10-09-2025
+msg_new,136632,67,Orari di trasporto scolastico per la  prima settimana a.s. 2025-2026,"In riferimento alle vostre precedenti comunicazioni, si allega in pdf il prospetto con gli orari di trasporto per la prima settimana dell' anno scolastico 2025-2026, da mercoledì 10 a venerdì 12 settembre.
+Si prega di prenderne visione.
+
+Grazie per la collaborazione.
+",2025-09-09,2025-09-16,3,3,Comunicazione - News,,1001,683014,non_letto,0,,,0,0,09-09-2025
+msg_new,136793,68,CIRC 22 PATTO EDUCATIVO DI CORRESPONSABILITA',PATTO EDUCATIVO DI CORRESPONSABILITA',2025-09-09,2026-08-31,4,4,Comunicazione - Circolare,,1001,697207,non_letto,0,,,0,0,09-09-2025
+msg_new,86744,57,Indicazioni sull’abbigliamento degli alunni,Indicazioni sull’abbigliamento degli alunni,2025-09-08,2026-08-31,4,4,Comunicazione - Circolare,,0000,553487,non_letto,0,,,0,0,08-09-2025
+msg_new,82064,51,Circolare n.9 Uscita autonoma alunni,Circolare n.9 Uscita autonoma alunni,2025-09-04,2026-08-31,null,null,Altro,,0000,390417,non_letto,0,,,0,0,04-09-2025
+msg_new,81571,48,CIRC. N 06 ORARIO PRIMI GIORNI SCUOLA PRIMARIA E SCUOLA SECONDARIA A.S. 2025/2026 E INIZIO MENSA,"CIRC. N. 06 ORARIO PRIMI GIORNI SCUOLA PRIMARIA E SCUOLA SECONDARIA
+A.S. 2025/2026 E INIZIO MENSA
+
+",2025-09-03,2026-08-31,4,4,Comunicazione - Circolare,,0000,361704,non_letto,0,,,0,0,03-09-2025
+msg_new,81573,49,Circ. n.7 DISTRIBUZIONE GRATUITA DEL DIARIO SCOLASTICO E DEL QUADERNO DIDATTICO A.S. 2025/2026,"Circ. n.7 DISTRIBUZIONE GRATUITA DEL DIARIO SCOLASTICO E DEL
+QUADERNO DIDATTICO A.S. 2025/2026",2025-09-03,2026-08-31,null,null,Altro,,0000,362615,non_letto,0,,,0,0,03-09-2025
+msg_new,80899,43,Circolare n1,RICHIESTA ENTRATA ANTICIPATA,2025-09-02,2026-08-31,4,4,Comunicazione - Circolare,,1001,292451,non_letto,0,,,0,0,02-09-2025
+msg_new,80906,44,Circolare n2,"COMUNICAZIONE ALLERGIE E /O INTOLLERANZE ALIMENTARI
+DEGLI ALUNNI - A.S. 2025/2026",2025-09-02,2026-08-31,4,4,Comunicazione - Circolare,,0000,293741,non_letto,0,,,0,0,02-09-2025
+msg_new,81211,46,Circolare n4  uscita alunni minori 14 anni,Circolare n.4 uscita alunni minori anni 14,2025-09-02,2026-08-31,null,null,Altro,,0000,326524,non_letto,0,,,0,0,02-09-2025
+msg_new,80602,42,"Avviso di vendita di materiali fuori uso e di beni non più utilizzabili, ai sensi dell’art. 34 del Decreto Interministeriale 28 agosto 2018, n. 129  ","Avviso di vendita di materiali fuori uso e di beni non più utilizzabili, ai sensi dell’art. 34 del Decreto Interministeriale 28 agosto 2018, n. 129  ",2025-09-01,2026-08-31,3,3,Comunicazione - News,,0000,262131,non_letto,0,,,0,0,01-09-2025
+msg_new,34863,40,CIRC 495 REFERENTI DI PLESSO A.S. 2025/2026,REFERENTI DI PLESSO A.S. 2025/2026,2025-08-29,2026-08-31,4,4,Comunicazione - Circolare,,1001,195991,non_letto,0,,,0,0,29-08-2025
+msg_new,61381,41,Rettifica circolare 495-Referenti di plesso.,"A parziale rettifica di quanto comunicato nella circolare 495, si evidenzia che, per mero errore materiale, è stato indicato il nominativo di Vianello Stefania come referente del Plesso Marconi, anzichè il nominativo della prof.ssa Vianello Alessandra.
+(alessandra.vianello@icparolari.edu.it)
+
+Cordiali saluti,
+Il Dirigente Scolastico
+",2025-08-29,2026-09-01,1,1,Comunicazione - Scuola/famiglia,,0000,211638,non_letto,0,,,0,0,29-08-2025
+msg_new,34533,30,CIRC 490 CONTRIBUTO VOLONTARIO A.S. 2025/2026,CONTRIBUTO VOLONTARIO A.S. 2025/2026,2025-08-28,2026-08-31,4,4,Comunicazione - Circolare,,1001,163282,non_letto,0,,,0,0,28-08-2025
+msg_new,34227,27,CIRC 488 Informativa privacy a.s. 2025-2026 ,CIRC 488 Informativa privacy a.s. 2025-2026 ,2025-08-26,2026-08-31,4,4,Comunicazione - Circolare,,1001,125619,non_letto,0,,,0,0,26-08-2025
+msg_new,3399,18,CIRC. 484 DELEGA PRELIEVO ALUNNO DA SCUOLA A.S. 2025/2026 ,CIRC. 484 DELEGA PRELIEVO ALUNNO DA SCUOLA A.S. 2025/2026 ,2025-08-20,2026-08-31,4,4,Comunicazione - Circolare,,0000,88386,non_letto,0,,,0,0,20-08-2025
+msg_new,3402,19,CIRC. 485 USCITA AUTONOMA ALUNNI e MEZZO DI TRASPORTO UTILIZZATO AL TERMINE DELL’ORARIO DELLE LEZIONI SCUOLA PRIMARIA E SCUOLA SECONDARIA DI I GRADO - AUTORIZZAZIONI  ,CIRC. 485 USCITA AUTONOMA ALUNNI e MEZZO DI TRASPORTO UTILIZZATO AL TERMINE DELL’ORARIO DELLE LEZIONI SCUOLA PRIMARIA E SCUOLA SECONDARIA DI I GRADO - AUTORIZZAZIONI  ,2025-08-20,2026-08-31,4,4,Comunicazione - Circolare,,0000,89470,non_letto,0,,,0,0,20-08-2025
+msg_new,2212,13,Circ. 480 TRASMISSIONE REGOLAMENTO DEL SERVIZIO DI RISTORAZIONE SCOLASTICA E NOTA DI TRASMISSIONE DEL 10-01-2025 ,Circ. 480 TRASMISSIONE REGOLAMENTO DEL SERVIZIO DI RISTORAZIONE SCOLASTICA E NOTA DI TRASMISSIONE DEL 10-01-2025 ,2025-08-18,2026-08-31,4,4,Comunicazione - Circolare,,0000,79188,non_letto,0,,,0,0,18-08-2025
