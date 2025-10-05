@@ -6,9 +6,13 @@ use reqwest::header::COOKIE;
 use scraper::{Html, Selector};
 use serde::Deserialize;
 use serde_json::Value;
+use std::fs;
+use std::io::Write;
 use std::sync::Arc;
 
-use bacheca_personale::{get_backeca, get_comunicazioni};
+use bacheca_personale::{Circolare, download_file, get_backeca, get_comunicazioni};
+
+use crate::bacheca_personale::download_allegati;
 
 // Struct per deserializzare la risposta JSON del login
 #[derive(Debug, Deserialize)]
@@ -48,7 +52,7 @@ pub struct Auth {
     #[serde(rename = "errCod")]
     pub err_cod: Vec<String>, // Array di codici errore
     pub errors: Vec<String>, // Array di errori
-    pub hints: Vec<String>, // Array di suggerimenti
+    pub hints: Vec<String>,  // Array di suggerimenti
     #[serde(rename = "loggedIn")]
     pub logged_in: bool,
     #[serde(rename = "mMode")]
@@ -75,8 +79,16 @@ fn test_session_token(
     println!("🧪 Testando il token PHPSESSID: {}", session_id);
     match get_backeca(client, session_id) {
         Ok(bacheca) => {
-            println!("✅ Token valido - Bacheca caricata con {} circolari lette e {} nuove", 
-                    bacheca.read.len(), bacheca.msg_new.len());
+            let circolari_nuove = if let Some(ref msg_new) = bacheca.msg_new {
+                msg_new.len()
+            } else {
+                0
+            };
+            println!(
+                "✅ Token valido - Bacheca caricata con {} circolari lette e {} nuove",
+                bacheca.read.len(),
+                circolari_nuove
+            );
             Ok(true)
         }
         Err(e) => {
@@ -142,11 +154,13 @@ fn login(
             println!("  - Ambiente: {}", login_resp.api.env);
             println!("  - Versione AuthSpa: {}", login_resp.api.auth_spa.version);
             println!("  - Logged in: {}", login_resp.data.auth.logged_in);
-            println!("  - Account: {} {} (ID: {}, Tipo: {})",
-                     login_resp.data.auth.account_info.nome,
-                     login_resp.data.auth.account_info.cognome,
-                     login_resp.data.auth.account_info.id,
-                     login_resp.data.auth.account_info.account_type);
+            println!(
+                "  - Account: {} {} (ID: {}, Tipo: {})",
+                login_resp.data.auth.account_info.nome,
+                login_resp.data.auth.account_info.cognome,
+                login_resp.data.auth.account_info.id,
+                login_resp.data.auth.account_info.account_type
+            );
             println!("  - Tempo: {}", login_resp.time);
 
             // Verifica se il login è riuscito
@@ -220,78 +234,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match test_session_token(&client, existing_token) {
             Ok(true) => {
                 println!("✅ Token esistente ancora valido! Uso quello.");
-                
+
+                // Crea la cartella principale download
+                fs::create_dir_all("download")?;
+
                 // Ottieni la bacheca
                 let bacheca = get_backeca(&client, existing_token)?;
-                
-                // Per ogni comunicazione in read e msg_new, chiama get_comunicazioni
-                for circolare in &bacheca.read {
-                    println!("📄 Elaborando comunicazione read: {}", circolare.id);
-                    get_comunicazioni(&client, existing_token, &circolare.id)?;
+
+                // Per ogni comunicazione in read e msg_new, elabora
+                process_comunicazioni(&client, existing_token, &bacheca.read)?;
+                if let Some(msg_new_vec) = &bacheca.msg_new {
+                    process_comunicazioni(&client, existing_token, msg_new_vec)?;
                 }
-                for circolare in &bacheca.msg_new {
-                    println!("📄 Elaborando comunicazione msg_new: {}", circolare.id);
-                    get_comunicazioni(&client, existing_token, &circolare.id)?;
-                }
-                
+
                 return Ok(());
             }
             _ => {
                 println!("❌ Errore durante il test del token esistente");
-                println!("🔄 Procedo con il login normale...");
-                // 2) Effettua il login se necessario
-                println!("\n🔐 Effettuo il login...");
-                match login(&client, &username, &password) {
-                    Ok(session_id) => {
-                        println!("✅ Login completato con successo!");
-                        println!("🔑 Session ID: {}", session_id);
-
-                        // Test finale del token ottenuto
-                        println!("\n🔄 Test finale del token ottenuto...");
-                        match test_session_token(&client, &session_id) {
-                            Ok(true) => {
-                                println!("✅ Token funzionante! Tutto OK.");
-                                
-                                // Ottieni la bacheca
-                                let bacheca = get_backeca(&client, &session_id)?;
-                                
-                                // Per ogni comunicazione in read e msg_new, chiama get_comunicazioni
-                                for circolare in &bacheca.read {
-                                    println!("📄 Elaborando comunicazione read: {}", circolare.id);
-                                    get_comunicazioni(&client, &session_id, &circolare.id)?;
-                                }
-                                for circolare in &bacheca.msg_new {
-                                    println!("📄 Elaborando comunicazione msg_new: {}", circolare.id);
-                                    get_comunicazioni(&client, &session_id, &circolare.id)?;
-                                }
-                            }
-                            Ok(false) => println!("⚠️ Token ricevuto ma test fallito"),
-                            Err(e) => println!("❌ Errore durante il test finale: {}", e),
-                        }
-                    }
-                    Err(e) => {
-                        println!("❌ Login fallito: {}", e);
-                        return Err(e);
-                    }
-                }
             }
         }
     } else {
         println!("📁 Nessun token salvato trovato, procedo con il login...");
-        // 2) Effettua il login se necessario
         println!("\n🔐 Effettuo il login...");
         match login(&client, &username, &password) {
             Ok(session_id) => {
                 println!("✅ Login completato con successo!");
-                println!("🔑 Session ID: {}", session_id);
-
-                // Test finale del token ottenuto
-                println!("\n🔄 Test finale del token ottenuto...");
-                match test_session_token(&client, &session_id) {
-                    Ok(true) => println!("✅ Token funzionante! Tutto OK."),
-                    Ok(false) => println!("⚠️ Token ricevuto ma test fallito"),
-                    Err(e) => println!("❌ Errore durante il test finale: {}", e),
-                }
+                println!("Riesegui il programma per continuare.");
             }
             Err(e) => {
                 println!("❌ Login fallito: {}", e);
@@ -300,7 +268,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    
+    Ok(())
+}
 
+// Nuova funzione per elaborare le comunicazioni
+fn process_comunicazioni(
+    client: &Client,
+    session_id: &str,
+    circolari: &[Circolare],
+) -> Result<(), Box<dyn std::error::Error>> {
+    for circolare in circolari {
+        println!(
+            "📄 Elaborando comunicazione: {} (Codice: {})",
+            circolare.id, circolare.codice
+        );
+
+        // Ottieni la comunicazione
+        let comunicazione = get_comunicazioni(client, session_id, &circolare.id)?;
+
+        // Crea sottocartella con codice
+        let subfolder = format!("download/{}", circolare.codice);
+        fs::create_dir_all(&subfolder)?;
+
+        // Scrivi README.txt con il testo
+        let readme_path = format!("{}/README.txt", subfolder);
+        let mut readme_file = fs::File::create(&readme_path)?;
+        readme_file.write_all(comunicazione.testo.as_bytes())?;
+        println!("📝 README creato: {}", readme_path);
+
+        // Scarica gli allegati nella sottocartella
+        download_allegati(
+            client,
+            session_id,
+            comunicazione.allegati.as_ref(),
+            &subfolder,
+        )?;
+        println!("📂 Allegati scaricati in: {}", subfolder);
+    }
     Ok(())
 }
