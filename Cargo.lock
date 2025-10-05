@@ -1052,20 +1052,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
-name = "poc-spaggiari"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "csv",
- "regex",
- "reqwest",
- "scraper",
- "serde",
- "serde_json",
- "url",
-]
-
-[[package]]
 name = "potential_utf"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1574,6 +1560,20 @@ checksum = "233504af464074f9d066d7b5416c5f9b894a5862a6506e306f7b816cdd6f1807"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "spaggiari-rs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "csv",
+ "regex",
+ "reqwest",
+ "scraper",
+ "serde",
+ "serde_json",
+ "url",
 ]
 
 [[package]]

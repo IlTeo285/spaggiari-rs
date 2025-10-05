@@ -172,6 +172,12 @@ pub fn download_file(
     session_id: &str,
     destination_path: &str,
 ) -> Result<String, anyhow::Error> {
+    // Controlla se il file già esiste
+    if std::path::Path::new(destination_path).exists() {
+        println!("📁 File già esistente, skip download: {}", destination_path);
+        return Ok(destination_path.to_string());
+    }
+
     let mut response = client
         .get(url)
         .header(

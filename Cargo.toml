@@ -1,7 +1,21 @@
 [package]
-name = "poc-spaggiari"
+name = "spaggiari-rs"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Una libreria Rust per interagire con il portale Spaggiari (Registro Elettronico)"
+license = "MIT"
+repository = "https://github.com/yourusername/spaggiari-rs"
+keywords = ["spaggiari", "scuola", "registro-elettronico"]
+categories = ["api-bindings", "web-programming"]
+
+[lib]
+name = "spaggiari_rs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "spaggiari-cli"
+path = "src/main.rs"
 
 [dependencies]
 reqwest = { version = "0.12.23", features = ["blocking", "cookies", "rustls-tls"] }
