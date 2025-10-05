@@ -1,13 +1,16 @@
 use spaggiari_rs::{create_client, SpaggiariSession};
-use std::fs;
+use std::{env, fs};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Carica credenziali dalle variabili d'ambiente
+    let username = env::var("SPAGGIARI_USERNAME")
+        .map_err(|_| "Variabile d'ambiente SPAGGIARI_USERNAME non impostata. Esegui: export SPAGGIARI_USERNAME=tuo_codice_fiscale")?;
+    let password = env::var("SPAGGIARI_PASSWORD")
+        .map_err(|_| "Variabile d'ambiente SPAGGIARI_PASSWORD non impostata. Esegui: export SPAGGIARI_PASSWORD=tua_password")?;
+
     // Esempio 1: Creare una sessione con login
     println!("🔐 Effettuo il login...");
-    let session = SpaggiariSession::new("TUO_CODICE_FISCALE", "TUA_PASSWORD")?;
-
-    // Esempio 2: Usare un token salvato (se ne hai uno)
-    // let session = SpaggiariSession::from_token("token_esistente".to_string())?;
+    let session = SpaggiariSession::new(&username, &password)?;
 
     // Verifica che la sessione sia valida
     if session.is_valid()? {

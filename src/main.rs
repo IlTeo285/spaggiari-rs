@@ -1,17 +1,20 @@
 use spaggiari_rs::{
     bacheca_personale::Circolare, create_client, test_session_token, SpaggiariSession,
 };
+use std::env;
 use std::fs;
 use std::io::Write;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Credenziali di login
-    let username = "G13070983V"; // Sostituisci con il tuo username
-    let password = "P4azn-P@dJxdt__ra@n7"; // Sostituisci con la tua password
+    // Carica credenziali dalle variabili d'ambiente
+    let username = env::var("SPAGGIARI_USERNAME")
+        .map_err(|_| "Variabile d'ambiente SPAGGIARI_USERNAME non impostata")?;
+    let password = env::var("SPAGGIARI_PASSWORD")
+        .map_err(|_| "Variabile d'ambiente SPAGGIARI_PASSWORD non impostata")?;
 
     // 1) Controlla se esiste già un token salvato
     println!("🔍 Controllo se esiste un token salvato...");
-    if let Ok(existing_token) = std::fs::read_to_string("phpsessid.txt") {
+    if let Ok(existing_token) = std::fs::read_to_string("phpsessid.token") {
         let existing_token = existing_token.trim();
         println!("📁 Token esistente trovato: {}", existing_token);
 

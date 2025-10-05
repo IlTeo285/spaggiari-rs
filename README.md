@@ -20,41 +20,76 @@ Aggiungi questa libreria al tuo `Cargo.toml`:
 spaggiari-rs = "0.1.0"
 ```
 
+## Configurazione
+
+Prima di utilizzare la libreria, devi impostare le seguenti variabili d'ambiente:
+
+```bash
+export SPAGGIARI_USERNAME="tuo_codice_fiscale"
+export SPAGGIARI_PASSWORD="tua_password"
+```
+
+### Configurazione rapida
+
+1. Copia il file di esempio:
+
+```bash
+cp .env.example .env
+```
+
+2. Modifica `.env` con le tue credenziali reali
+
+3. Carica le variabili d'ambiente:
+
+```bash
+source .env
+```
+
+### Su Linux/macOS
+
+```bash
+echo 'export SPAGGIARI_USERNAME="tuo_codice_fiscale"' >> ~/.bashrc
+echo 'export SPAGGIARI_PASSWORD="tua_password"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Su Windows
+
+```cmd
+set SPAGGIARI_USERNAME=tuo_codice_fiscale
+set SPAGGIARI_PASSWORD=tua_password
+```
+
+### Su Windows (variabili permanenti)
+
+```cmd
+setx SPAGGIARI_USERNAME "tuo_codice_fiscale"
+setx SPAGGIARI_PASSWORD "tua_password"
+```
+
 ## Utilizzo
 
 ### Esempio base
 
-```rust
+````rust
 use spaggiari_rs::SpaggiariSession;
+use std::env;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Carica credenziali dalle variabili d'ambiente
+    let username = env::var("SPAGGIARI_USERNAME")?;
+    let password = env::var("SPAGGIARI_PASSWORD")?;
+
     // Crea una nuova sessione con login
-    let session = SpaggiariSession::new("TUO_CODICE_FISCALE", "TUA_PASSWORD")?;
+    let session = SpaggiariSession::new(&username, &password)?;
 
     // Ottieni la bacheca
     let bacheca = session.get_bacheca()?;
     println!("Trovate {} comunicazioni", bacheca.read.len());
 
-    // Elabora ogni comunicazione
-    for circolare in &bacheca.read {
-        println!("📄 {}: {}", circolare.codice, circolare.titolo);
-
-        // Ottieni i dettagli
-        let comunicazione = session.get_comunicazione(&circolare.id)?;
-
-        // Scarica gli allegati
-        if !comunicazione.allegati.is_empty() {
-            let folder = format!("download/{}", circolare.codice);
-            std::fs::create_dir_all(&folder)?;
-            session.download_allegati(&comunicazione.allegati, &folder)?;
-        }
-    }
-
     Ok(())
 }
-```
-
-### Uso di un token esistente
+```### Uso di un token esistente
 
 ```rust
 use spaggiari_rs::SpaggiariSession;
@@ -68,7 +103,7 @@ if session.is_valid()? {
     let bacheca = session.get_bacheca()?;
     // ... usa la bacheca
 }
-```
+````
 
 ### Configurazione manuale del client
 

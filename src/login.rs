@@ -177,8 +177,8 @@ pub fn login(
             println!("✅ PHPSESSID estratto: {}", session_id);
 
             // Salva il token in un file per uso futuro
-            std::fs::write("phpsessid.txt", &session_id)?;
-            println!("� Token salvato in phpsessid.txt");
+            std::fs::write("phpsessid.token", &session_id)?;
+            println!("� Token salvato in phpsessid.token");
 
             Ok(session_id)
         }
