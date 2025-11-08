@@ -1,4 +1,4 @@
-use reqwest::blocking::Client;
+use reqwest::Client;
 use serde::Deserialize;
 
 use crate::bacheca_personale::get_backeca;
@@ -61,13 +61,13 @@ pub struct AccountInfo {
 }
 
 // Funzione per testare se il token di sessione funziona
-pub fn test_session_token(
+pub async fn test_session_token(
     client: &Client,
     session_id: &str,
     webidentity: &str,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     println!("🧪 Testando il token PHPSESSID: {}", session_id);
-    match get_backeca(client, session_id, webidentity) {
+    match get_backeca(client, session_id, webidentity).await {
         Ok(bacheca) => {
             let circolari_nuove = if let Some(ref msg_new) = bacheca.msg_new {
                 msg_new.len()
@@ -89,7 +89,7 @@ pub fn test_session_token(
 }
 
 // Funzione per effettuare il login e restituire la session_id
-pub fn login(
+pub async fn login(
     client: &Client,
     username: &str,
     password: &str,
@@ -102,12 +102,16 @@ pub fn login(
 
     // 2) Invia il form
     println!("📤 Invio credenziali a {}...", login_action_url);
-    let res = client.post(login_action_url).form(&form_data).send()?;
+    let res = client
+        .post(login_action_url)
+        .form(&form_data)
+        .send()
+        .await?;
 
     let final_url = res.url().clone();
     let status = res.status();
     let headers = res.headers().clone();
-    let response_text = res.text()?;
+    let response_text = res.text().await?;
 
     // 3) Analizza la risposta del login
     println!("📥 Risposta ricevuta da: {}", final_url);

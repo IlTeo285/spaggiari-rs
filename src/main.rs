@@ -5,7 +5,8 @@ use std::env;
 use std::fs;
 use std::io::Write;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Carica credenziali dalle variabili d'ambiente
     let username = env::var("SPAGGIARI_USERNAME")
         .map_err(|_| "Variabile d'ambiente SPAGGIARI_USERNAME non impostata")?;
@@ -21,23 +22,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Prova a usare il token esistente
         println!("🧪 Test del token esistente...");
         let client = create_client()?;
-        match test_session_token(&client, existing_token, &username) {
+        match test_session_token(&client, existing_token, &username).await {
             Ok(true) => {
                 println!("✅ Token esistente ancora valido! Uso quello.");
 
                 // Crea una sessione dal token esistente
-                let session = SpaggiariSession::from_token(existing_token.to_string())?;
+                let session = SpaggiariSession::from_token(existing_token.to_string()).await?;
 
                 // Crea la cartella principale download
                 fs::create_dir_all("download")?;
 
                 // Ottieni la bacheca
-                let bacheca = session.get_bacheca()?;
+                let bacheca = session.get_bacheca().await?;
 
                 // Per ogni comunicazione in read e msg_new, elabora
-                process_comunicazioni(&session, &bacheca.read)?;
+                process_comunicazioni(&session, &bacheca.read).await?;
                 if let Some(msg_new_vec) = &bacheca.msg_new {
-                    process_comunicazioni(&session, msg_new_vec)?;
+                    process_comunicazioni(&session, msg_new_vec).await?;
                 }
 
                 return Ok(());
@@ -49,7 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("📁 Nessun token salvato trovato, procedo con il login...");
         println!("\n🔐 Effettuo il login...");
-        match SpaggiariSession::new(&username, &password) {
+        match SpaggiariSession::new(&username, &password).await {
             Ok(session) => {
                 println!("✅ Login completato con successo!");
 
@@ -69,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // Nuova funzione per elaborare le comunicazioni usando la sessione
-fn process_comunicazioni(
+async fn process_comunicazioni(
     session: &SpaggiariSession,
     circolari: &[Circolare],
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -80,7 +81,7 @@ fn process_comunicazioni(
         );
 
         // Ottieni la comunicazione
-        let comunicazione = session.get_comunicazione(&circolare.id)?;
+        let comunicazione = session.get_comunicazione(&circolare.id).await?;
 
         // Crea sottocartella con codice
         let subfolder = format!("download/{}", circolare.codice);
@@ -93,7 +94,9 @@ fn process_comunicazioni(
         println!("📝 README creato: {}", readme_path);
 
         // Scarica gli allegati nella sottocartella
-        session.download_allegati(&comunicazione.allegati, &subfolder)?;
+        session
+            .download_allegati(&comunicazione.allegati, &subfolder)
+            .await?;
         println!("📂 Allegati scaricati in: {}", subfolder);
     }
     Ok(())

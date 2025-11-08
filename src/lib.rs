@@ -11,14 +11,14 @@
 pub mod bacheca_personale;
 pub mod login;
 
-use reqwest::blocking::Client;
 use reqwest::cookie::Jar;
+use reqwest::Client;
 use std::sync::Arc;
 
 // Re-export delle strutture principali
 pub use bacheca_personale::{
-    download_allegati, download_file, get_backeca, get_comunicazioni, Allegato, Bacheca, Circolare,
-    Comunicazione,
+    download_allegati, download_allegati_bytes, download_file, download_file_bytes, get_backeca,
+    get_comunicazioni, Allegato, Bacheca, Circolare, Comunicazione,
 };
 pub use login::{login, test_session_token, AccountInfo, Auth, LoginResponse};
 
@@ -52,7 +52,7 @@ pub fn create_client() -> Result<Client, reqwest::Error> {
 pub struct SpaggiariSession {
     pub client: Client,
     pub session_token: String,
-    identity: String
+    identity: String,
 }
 
 impl SpaggiariSession {
@@ -74,9 +74,9 @@ impl SpaggiariSession {
     ///
     /// let session = SpaggiariSession::new("CODICE_FISCALE", "PASSWORD").unwrap();
     /// ```
-    pub fn new(username: &str, password: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(username: &str, password: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let client = create_client()?;
-        let session_token = login(&client, username, password)?;
+        let session_token = login(&client, username, password).await?;
 
         Ok(SpaggiariSession {
             client,
@@ -102,18 +102,18 @@ impl SpaggiariSession {
     ///
     /// let session = SpaggiariSession::from_token("token_esistente").unwrap();
     /// ```
-    pub fn from_token(session_token: String) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn from_token(session_token: String) -> Result<Self, Box<dyn std::error::Error>> {
         let client = create_client()?;
         let username = std::env::var("SPAGGIARI_USERNAME")?;
         // Verifica che il token sia valido
-        if !test_session_token(&client, &session_token, &username)? {
+        if !test_session_token(&client, &session_token, &username).await? {
             return Err("Token di sessione non valido".into());
         }
 
         Ok(SpaggiariSession {
             client,
             session_token,
-            identity: username
+            identity: username,
         })
     }
 
@@ -122,8 +122,8 @@ impl SpaggiariSession {
     /// # Returns
     ///
     /// `true` se il token è valido, `false` altrimenti
-    pub fn is_valid(&self) -> Result<bool, Box<dyn std::error::Error>> {
-        test_session_token(&self.client, &self.session_token, &self.identity)
+    pub async fn is_valid(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        test_session_token(&self.client, &self.session_token, &self.identity).await
     }
 
     /// Ottiene la bacheca personale
@@ -139,8 +139,8 @@ impl SpaggiariSession {
     /// let bacheca = session.get_bacheca().unwrap();
     /// println!("Comunicazioni lette: {}", bacheca.read.len());
     /// ```
-    pub fn get_bacheca(&self) -> Result<Bacheca, Box<dyn std::error::Error>> {
-        Ok(get_backeca(&self.client, &self.session_token, &self.identity)?)
+    pub async fn get_bacheca(&self) -> Result<Bacheca, Box<dyn std::error::Error>> {
+        Ok(get_backeca(&self.client, &self.session_token, &self.identity).await?)
     }
 
     /// Ottiene una comunicazione specifica
@@ -152,16 +152,11 @@ impl SpaggiariSession {
     /// # Returns
     ///
     /// La struttura `Comunicazione` con tutti i dettagli
-    pub fn get_comunicazione(
+    pub async fn get_comunicazione(
         &self,
         circolare_id: &str,
-    ) -> Result<Comunicazione, Box<dyn std::error::Error>> {
-        Ok(get_comunicazioni(
-            &self.client,
-            &self.session_token,
-            circolare_id,
-            ""
-        )?)
+    ) -> Result<Comunicazione, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(get_comunicazioni(&self.client, &self.session_token, circolare_id, "").await?)
     }
 
     /// Scarica tutti gli allegati di una comunicazione
@@ -170,17 +165,61 @@ impl SpaggiariSession {
     ///
     /// * `allegati` - Lista degli allegati da scaricare
     /// * `folder_path` - Percorso della cartella dove salvare i file
-    pub fn download_allegati(
+    pub async fn download_allegati(
         &self,
         allegati: &[Allegato],
         folder_path: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(download_allegati(
-            &self.client,
-            &self.session_token,
-            allegati,
-            folder_path,
-        )?)
+        Ok(download_allegati(&self.client, &self.session_token, allegati, folder_path).await?)
+    }
+
+    /// Scarica un file e ritorna il contenuto binario
+    ///
+    /// # Arguments
+    ///
+    /// * `url` - URL del file da scaricare
+    ///
+    /// # Returns
+    ///
+    /// Una tupla contenente il nome del file e il contenuto binario
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let (filename, content) = session.download_file_bytes("https://...").await?;
+    /// println!("Scaricato {} ({} bytes)", filename, content.len());
+    /// ```
+    pub async fn download_file_bytes(
+        &self,
+        url: &str,
+    ) -> Result<(String, Vec<u8>), Box<dyn std::error::Error>> {
+        Ok(download_file_bytes(&self.client, url, &self.session_token).await?)
+    }
+
+    /// Scarica tutti gli allegati in memoria e ritorna un vettore di risultati
+    ///
+    /// # Arguments
+    ///
+    /// * `allegati` - Lista degli allegati da scaricare
+    ///
+    /// # Returns
+    ///
+    /// Un vettore di tuple contenenti il nome del file e il contenuto binario
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let comunicazione = session.get_comunicazione("123").await?;
+    /// let files = session.download_allegati_bytes(&comunicazione.allegati).await?;
+    /// for (filename, content) in files {
+    ///     println!("Scaricato {} ({} bytes)", filename, content.len());
+    /// }
+    /// ```
+    pub async fn download_allegati_bytes(
+        &self,
+        allegati: Vec<Allegato>,
+    ) -> Result<Vec<(String, Vec<u8>)>, Box<dyn std::error::Error>> {
+        Ok(download_allegati_bytes(&self.client, &self.session_token, allegati).await?)
     }
 }
 

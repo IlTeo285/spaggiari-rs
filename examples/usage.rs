@@ -1,7 +1,8 @@
 use spaggiari_rs::{create_client, SpaggiariSession};
 use std::{env, fs};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Carica credenziali dalle variabili d'ambiente
     let username = env::var("SPAGGIARI_USERNAME")
         .map_err(|_| "Variabile d'ambiente SPAGGIARI_USERNAME non impostata. Esegui: export SPAGGIARI_USERNAME=tuo_codice_fiscale")?;
@@ -10,14 +11,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Esempio 1: Creare una sessione con login
     println!("🔐 Effettuo il login...");
-    let session = SpaggiariSession::new(&username, &password)?;
+    let session = SpaggiariSession::new(&username, &password).await?;
 
     // Verifica che la sessione sia valida
-    if session.is_valid()? {
+    if session.is_valid().await? {
         println!("✅ Sessione valida!");
 
         // Ottieni la bacheca
-        let bacheca = session.get_bacheca()?;
+        let bacheca = session.get_bacheca().await?;
         println!("📄 Trovate {} comunicazioni lette", bacheca.read.len());
 
         if let Some(msg_new) = &bacheca.msg_new {
@@ -34,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
 
             // Ottieni i dettagli della comunicazione
-            let comunicazione = session.get_comunicazione(&circolare.id)?;
+            let comunicazione = session.get_comunicazione(&circolare.id).await?;
             println!(
                 "📝 Testo: {}",
                 comunicazione.testo.chars().take(100).collect::<String>()
@@ -47,7 +48,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Scarica gli allegati se ce ne sono
             if !comunicazione.allegati.is_empty() {
                 println!("📎 Scarico {} allegati...", comunicazione.allegati.len());
-                session.download_allegati(&comunicazione.allegati, &folder)?;
+                session
+                    .download_allegati(&comunicazione.allegati, &folder)
+                    .await?;
                 println!("✅ Allegati scaricati in: {}", folder);
             } else {
                 println!("📎 Nessun allegato da scaricare");

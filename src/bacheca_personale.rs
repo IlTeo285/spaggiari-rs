@@ -1,20 +1,38 @@
 use anyhow;
 use csv::Writer;
-use regex::Regex;
-use reqwest::blocking::Client;
-use scraper::{Html, Selector};
-use serde::Deserialize;
-use std::fs::File;
-use std::io::copy;
 use log::{debug, error};
+use regex::Regex;
+use reqwest::Client;
+use scraper::{Html, Selector};
+use serde::{Deserialize, Deserializer};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
 const url_bacheca: &str = "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php";
 const url_comunicazioni: &str =
     "https://web.spaggiari.eu/sif/app/default/bacheca_comunicazione.php";
 
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum IntOrString {
+    Int(i32),
+    String(String),
+}
+
+fn de_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match IntOrString::deserialize(deserializer)? {
+        IntOrString::Int(i) => Ok(i),
+        IntOrString::String(s) => s.trim().parse::<i32>().map_err(serde::de::Error::custom),
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct Circolare {
     pub id: String,
+    #[serde(deserialize_with = "de_i32")]
     pub codice: i32,
     pub titolo: String,
     pub testo: String,
@@ -30,7 +48,7 @@ pub struct Circolare {
     pub tipo_com_desc: String,
     #[serde(rename = "nome_file")]
     pub nome_file: Option<String>,
-    pub richieste: String,
+    pub richieste: Option<String>,
     #[serde(rename = "id_relazione")]
     pub id_relazione: String,
     #[serde(rename = "conf_lettura")]
@@ -42,7 +60,7 @@ pub struct Circolare {
     #[serde(rename = "file_risp")]
     pub file_risp: Option<String>,
     #[serde(rename = "flag_accettazione")]
-    pub flag_accettazione: String,
+    pub flag_accettazione: Option<String>,
     pub modificato: String,
     #[serde(rename = "evento_data")]
     pub evento_data: String,
@@ -52,94 +70,6 @@ pub struct Circolare {
 pub struct Bacheca {
     pub read: Vec<Circolare>,
     pub msg_new: Option<Vec<Circolare>>,
-}
-
-// Nuova funzione per scrivere la bacheca su CSV (solo in modalità debug)
-fn write_bacheca_to_csv(bacheca: &Bacheca) -> Result<(), anyhow::Error> {
-    if cfg!(debug_assertions) {
-        let mut wtr = Writer::from_writer(File::create("bacheca.csv")?);
-        // Scrivi header con tutti i campi di Circolare
-        wtr.write_record(&[
-            "tipo",
-            "id",
-            "codice",
-            "titolo",
-            "testo",
-            "data_start",
-            "data_stop",
-            "tipo_com",
-            "tipo_com_filtro",
-            "tipo_com_desc",
-            "nome_file",
-            "richieste",
-            "id_relazione",
-            "conf_lettura",
-            "flag_risp",
-            "testo_risp",
-            "file_risp",
-            "flag_accettazione",
-            "modificato",
-            "evento_data",
-        ])?;
-
-        // Scrivi righe per "read"
-        for circolare in &bacheca.read {
-            wtr.write_record(&[
-                "read",
-                &circolare.id,
-                &circolare.codice.to_string(),
-                &circolare.titolo,
-                &circolare.testo,
-                &circolare.data_start,
-                &circolare.data_stop,
-                &circolare.tipo_com,
-                &circolare.tipo_com_filtro,
-                &circolare.tipo_com_desc,
-                &circolare.nome_file.as_deref().unwrap_or(""),
-                &circolare.richieste,
-                &circolare.id_relazione,
-                &circolare.conf_lettura,
-                &circolare.flag_risp,
-                &circolare.testo_risp.as_deref().unwrap_or(""),
-                &circolare.file_risp.as_deref().unwrap_or(""),
-                &circolare.flag_accettazione,
-                &circolare.modificato,
-                &circolare.evento_data,
-            ])?;
-        }
-
-        // Scrivi righe per "msg_new" solo se presente
-        if let Some(msg_new_vec) = &bacheca.msg_new {
-            for circolare in msg_new_vec {
-                wtr.write_record(&[
-                    "msg_new",
-                    &circolare.id,
-                    &circolare.codice.to_string(),
-                    &circolare.titolo,
-                    &circolare.testo,
-                    &circolare.data_start,
-                    &circolare.data_stop,
-                    &circolare.tipo_com,
-                    &circolare.tipo_com_filtro,
-                    &circolare.tipo_com_desc,
-                    &circolare.nome_file.as_deref().unwrap_or(""),
-                    &circolare.richieste,
-                    &circolare.id_relazione,
-                    &circolare.conf_lettura,
-                    &circolare.flag_risp,
-                    &circolare.testo_risp.as_deref().unwrap_or(""),
-                    &circolare.file_risp.as_deref().unwrap_or(""),
-                    &circolare.flag_accettazione,
-                    &circolare.modificato,
-                    &circolare.evento_data,
-                ])?;
-            }
-        }
-
-        wtr.flush()?;
-        println!("💾 Bacheca salvata su bacheca.csv (modalità debug)");
-    }
-    Ok(())
 }
 
 // Nuova funzione per estrarre comunicazione_id e allegato_id dai tag <a class="dwl_allegato">
@@ -166,8 +96,52 @@ pub fn extract_allegati(html: &str) -> Result<Vec<(String, String)>, anyhow::Err
     Ok(allegati)
 }
 
+// Nuova funzione per scaricare un file e ritornare il contenuto binario
+pub async fn download_file_bytes(
+    client: &Client,
+    url: &str,
+    session_id: &str,
+) -> Result<(String, Vec<u8>), anyhow::Error> {
+    let response = client
+        .get(url)
+        .header(
+            "Cookie",
+            format!("PHPSESSID={}; webidentity=G13070983V", session_id),
+        )
+        .send()
+        .await?;
+
+    if response.status().is_success() {
+        // Estrai filename da Content-Disposition
+        let content_disposition = response
+            .headers()
+            .get("content-disposition")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        let filename = extract_filename_from_disposition(content_disposition)
+            .unwrap_or_else(|| "file_sconosciuto".to_string());
+
+        // Scarica il contenuto come bytes
+        let bytes = response.bytes().await?;
+        debug!(
+            "📥 File scaricato in memoria: {} ({} bytes)",
+            filename,
+            bytes.len()
+        );
+
+        Ok((filename, bytes.to_vec()))
+    } else {
+        error!(
+            "❌ Download fallito per {}: Status {}",
+            url,
+            response.status()
+        );
+        Err(anyhow::anyhow!("Download fallito: {}", response.status()))
+    }
+}
+
 // Nuova funzione per scaricare un file da un URL
-pub fn download_file(
+pub async fn download_file(
     client: &Client,
     url: &str,
     session_id: &str,
@@ -179,13 +153,14 @@ pub fn download_file(
         return Ok(destination_path.to_string());
     }
 
-    let mut response = client
+    let response = client
         .get(url)
         .header(
             "Cookie",
             format!("PHPSESSID={}; webidentity=G13070983V", session_id),
         ) //TODO get from args
-        .send()?;
+        .send()
+        .await?;
 
     if response.status().is_success() {
         // Estrai filename da Content-Disposition
@@ -198,13 +173,14 @@ pub fn download_file(
             .unwrap_or_else(|| "file_sconosciuto".to_string());
 
         let filepath = format!("{}/{}", destination_path, filename); // destination_path è una directory, aggiungi il filename
-        // Assicurati che la directory esista
+                                                                     // Assicurati che la directory esista
         if let Some(parent) = std::path::Path::new(&filepath).parent() {
             std::fs::create_dir_all(parent)?;
         }
 
-        let mut file = File::create(&filepath)?;
-        copy(&mut response, &mut file)?;
+        let mut file = File::create(&filepath).await?;
+        let bytes = response.bytes().await?;
+        file.write_all(&bytes).await?;
         debug!("📥 File scaricato: {}", filepath);
         Ok(filepath)
     } else {
@@ -229,7 +205,7 @@ fn extract_filename_from_disposition(disposition: &str) -> Option<String> {
 }
 
 // Nuova funzione per scaricare tutti gli allegati
-pub fn download_allegati(
+pub async fn download_allegati(
     client: &Client,
     session_id: &str,
     allegati: &[Allegato],
@@ -240,32 +216,68 @@ pub fn download_allegati(
             "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php?action=file_download&com_id={}",
             allegato.allegato_id
         );
-        download_file(client, &download_url, session_id, destination_path)?;
+        download_file(client, &download_url, session_id, destination_path).await?;
     }
     Ok(())
 }
 
-pub fn get_backeca(client: &Client, session_id: &str, webidentity: &str) -> Result<Bacheca, anyhow::Error> {
+// Nuova funzione per scaricare tutti gli allegati in memoria
+pub async fn download_allegati_bytes(
+    client: &Client,
+    session_id: &str,
+    allegati: Vec<Allegato>,
+) -> Result<Vec<(String, Vec<u8>)>, anyhow::Error> {
+    let mut results = Vec::new();
+
+    for allegato in allegati {
+        let download_url = format!(
+            "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php?action=file_download&com_id={}",
+            allegato.allegato_id
+        );
+
+        match download_file_bytes(client, &download_url, session_id).await {
+            Ok((filename, content)) => {
+                results.push((filename, content));
+            }
+            Err(e) => {
+                error!(
+                    "❌ Errore durante il download dell'allegato {}: {}",
+                    allegato.allegato_id, e
+                );
+                // Continua con gli altri allegati anche in caso di errore
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+pub async fn get_backeca(
+    client: &Client,
+    session_id: &str,
+    webidentity: &str,
+) -> Result<Bacheca, anyhow::Error> {
     let response = client
         .get(url_bacheca)
         .query(&[("action", "get_comunicazioni"), ("ncna", "1")]) // Aggiunti i form data come query parameters
         .header(
             "Cookie",
             format!("PHPSESSID={}; webidentity={}", session_id, webidentity),
-        ) //TODO get from args
-        .send()?;
+        )
+        .send()
+        .await?;
 
     let status = response.status();
 
     debug!("📊 Risposta bacheca - Status: {}", status);
 
     if status.is_success() {
-        let text = response.text()?;
+        let text = response.text().await?;
+
         //println!("{}", text);
         match serde_json::from_str::<Bacheca>(&text) {
             Ok(bacheca) => {
                 // Chiama la funzione separata per scrivere il CSV
-                write_bacheca_to_csv(&bacheca)?;
                 Ok(bacheca)
             }
             Err(e) => {
@@ -303,11 +315,11 @@ pub struct Comunicazione {
     pub allegati: Vec<Allegato>,
 }
 
-pub fn get_comunicazioni(
+pub async fn get_comunicazioni(
     client: &Client,
     session_id: &str,
     comm_id: &str,
-    webidentity: &str
+    webidentity: &str,
 ) -> Result<Comunicazione, anyhow::Error> {
     let response = client
         .get(url_comunicazioni)
@@ -316,14 +328,15 @@ pub fn get_comunicazioni(
             "Cookie",
             format!("PHPSESSID={}; webidentity={}", session_id, webidentity),
         ) //TODO get from args
-        .send()?;
+        .send()
+        .await?;
 
     let status = response.status();
 
     debug!("📊 Risposta bacheca - Status: {}", status);
 
     if status.is_success() {
-        let text = response.text()?;
+        let text = response.text().await?;
         //println!("{}", text);
 
         // Estrai gli allegati dal body HTML
