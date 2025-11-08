@@ -1,5 +1,4 @@
 use anyhow;
-use csv::Writer;
 use log::{debug, error};
 use regex::Regex;
 use reqwest::Client;
@@ -8,8 +7,8 @@ use serde::{Deserialize, Deserializer};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
-const url_bacheca: &str = "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php";
-const url_comunicazioni: &str =
+const URL_BACHECA: &str = "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php";
+const URL_COMUNICAZIONI: &str =
     "https://web.spaggiari.eu/sif/app/default/bacheca_comunicazione.php";
 
 #[derive(Deserialize)]
@@ -258,7 +257,7 @@ pub async fn get_backeca(
     webidentity: &str,
 ) -> Result<Bacheca, anyhow::Error> {
     let response = client
-        .get(url_bacheca)
+        .get(URL_BACHECA)
         .query(&[("action", "get_comunicazioni"), ("ncna", "1")]) // Aggiunti i form data come query parameters
         .header(
             "Cookie",
@@ -322,7 +321,7 @@ pub async fn get_comunicazioni(
     webidentity: &str,
 ) -> Result<Comunicazione, anyhow::Error> {
     let response = client
-        .get(url_comunicazioni)
+        .get(URL_COMUNICAZIONI)
         .query(&[("action", "risposta_com"), ("com_id", comm_id)]) // Aggiunti i form data come query parameters
         .header(
             "Cookie",

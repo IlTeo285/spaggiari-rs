@@ -196,4 +196,4 @@ MIT
 
 ## Contributi
 
-I contributi sono benvenuti! Apri pure issue e pull request.
+I contributi sono benvenuti! Apri pure issue e pull requests
