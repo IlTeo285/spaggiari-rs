@@ -1,11 +1,11 @@
 [package]
 name = "spaggiari-rs"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Matteo Lazzarin <matteo.lazzarin@mtlz.it>"]
 description = "Una libreria Rust per interagire con il portale Spaggiari (Registro Elettronico)"
 license = "MIT"
-repository = "https://github.com/yourusername/spaggiari-rs"
+repository = "https://github.com/IlTeo285/spaggiari-rs"
 keywords = ["spaggiari", "scuola", "registro-elettronico"]
 categories = ["api-bindings", "web-programming"]
 
