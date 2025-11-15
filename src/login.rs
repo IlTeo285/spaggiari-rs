@@ -2,6 +2,7 @@ use reqwest::Client;
 use serde::Deserialize;
 
 use crate::bacheca_personale::get_backeca;
+use crate::error::SpaggiariError;
 
 // Struct per deserializzare la risposta JSON del login
 #[derive(Debug, Deserialize)]
@@ -61,24 +62,12 @@ pub struct AccountInfo {
 }
 
 // Funzione per testare se il token di sessione funziona
-pub async fn test_session_token(
-    client: &Client,
-    session_id: &str,
-    webidentity: &str,
-) -> Result<bool, Box<dyn std::error::Error>> {
+pub async fn test_session_token(client: &Client, session_id: &str, webidentity: &str) -> Result<bool, SpaggiariError> {
     println!("🧪 Testando il token PHPSESSID: {}", session_id);
     match get_backeca(client, session_id, webidentity).await {
         Ok(bacheca) => {
-            let circolari_nuove = if let Some(ref msg_new) = bacheca.msg_new {
-                msg_new.len()
-            } else {
-                0
-            };
-            println!(
-                "✅ Token valido - Bacheca caricata con {} circolari lette e {} nuove",
-                bacheca.read.len(),
-                circolari_nuove
-            );
+            let circolari_nuove = if let Some(ref msg_new) = bacheca.msg_new { msg_new.len() } else { 0 };
+            println!("✅ Token valido - Bacheca caricata con {} circolari lette e {} nuove", bacheca.read.len(), circolari_nuove);
             Ok(true)
         }
         Err(e) => {
@@ -89,11 +78,7 @@ pub async fn test_session_token(
 }
 
 // Funzione per effettuare il login e restituire la session_id
-pub async fn login(
-    client: &Client,
-    username: &str,
-    password: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn login(client: &Client, username: &str, password: &str) -> Result<String, SpaggiariError> {
     let login_action_url = "https://web.spaggiari.eu/auth-p7/app/default/AuthApi4.php?a=aLoginPwd";
 
     // 1) Prepara i dati del form
@@ -102,11 +87,7 @@ pub async fn login(
 
     // 2) Invia il form
     println!("📤 Invio credenziali a {}...", login_action_url);
-    let res = client
-        .post(login_action_url)
-        .form(&form_data)
-        .send()
-        .await?;
+    let res = client.post(login_action_url).form(&form_data).send().await?;
 
     let final_url = res.url().clone();
     let status = res.status();
@@ -150,22 +131,21 @@ pub async fn login(
             println!("  - Logged in: {}", login_resp.data.auth.logged_in);
             println!(
                 "  - Account: {} {} (ID: {}, Tipo: {})",
-                login_resp.data.auth.account_info.nome,
-                login_resp.data.auth.account_info.cognome,
-                login_resp.data.auth.account_info.id,
-                login_resp.data.auth.account_info.account_type
+                login_resp.data.auth.account_info.nome, login_resp.data.auth.account_info.cognome, login_resp.data.auth.account_info.id, login_resp.data.auth.account_info.account_type
             );
             println!("  - Tempo: {}", login_resp.time);
 
             // Verifica se il login è riuscito
             if !login_resp.data.auth.logged_in {
-                return Err("Login fallito: loggedIn è false".into());
+                return Err(SpaggiariError::AuthenticationFailed);
             }
 
             // Controlla errori
             if !login_resp.error.is_empty() {
                 println!("⚠️ Errori nella risposta: {:?}", login_resp.error);
-                return Err(format!("Errori nella risposta: {:?}", login_resp.error).into());
+                return Err(SpaggiariError::ApiError {
+                    message: format!("Errori nella risposta: {:?}", login_resp.error),
+                });
             }
         }
         Err(e) => {
@@ -200,7 +180,7 @@ pub async fn login(
                 println!("{}: {}", name, value.to_str().unwrap_or("[non-UTF8]"));
             }
 
-            Err("PHPSESSID non trovato nella risposta di login".into())
+            Err(SpaggiariError::AuthenticationFailed)
         }
     }
 }

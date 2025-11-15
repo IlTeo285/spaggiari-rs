@@ -9,6 +9,7 @@
 //! - Gestire i token di sessione
 
 pub mod bacheca_personale;
+pub mod error;
 pub mod login;
 
 use reqwest::cookie::Jar;
@@ -16,10 +17,8 @@ use reqwest::Client;
 use std::sync::Arc;
 
 // Re-export delle strutture principali
-pub use bacheca_personale::{
-    download_allegati, download_allegati_bytes, download_file, download_file_bytes, get_backeca,
-    get_comunicazioni, Allegato, Bacheca, Circolare, Comunicazione,
-};
+pub use bacheca_personale::{download_allegati, download_allegati_bytes, download_file, download_file_bytes, get_backeca, get_comunicazioni, Allegato, Bacheca, Circolare, Comunicazione};
+pub use error::SpaggiariError;
 pub use login::{login, test_session_token, AccountInfo, Auth, LoginResponse};
 
 /// Crea un client HTTP configurato per Spaggiari
@@ -39,10 +38,7 @@ pub fn create_client() -> Result<Client, reqwest::Error> {
     let jar = Jar::default();
     let jar = Arc::new(jar);
 
-    Client::builder()
-        .cookie_provider(jar)
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-        .build()
+    Client::builder().cookie_provider(jar).user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)").build()
 }
 
 /// Struttura per gestire una sessione Spaggiari
@@ -74,7 +70,7 @@ impl SpaggiariSession {
     ///
     /// let session = SpaggiariSession::new("CODICE_FISCALE", "PASSWORD").unwrap();
     /// ```
-    pub async fn new(username: &str, password: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(username: &str, password: &str) -> Result<Self, SpaggiariError> {
         let client = create_client()?;
         let session_token = login(&client, username, password).await?;
 
@@ -102,12 +98,12 @@ impl SpaggiariSession {
     ///
     /// let session = SpaggiariSession::from_token("token_esistente").unwrap();
     /// ```
-    pub async fn from_token(session_token: String) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn from_token(session_token: String) -> Result<Self, SpaggiariError> {
         let client = create_client()?;
         let username = std::env::var("SPAGGIARI_USERNAME")?;
         // Verifica che il token sia valido
         if !test_session_token(&client, &session_token, &username).await? {
-            return Err("Token di sessione non valido".into());
+            return Err(SpaggiariError::InvalidSessionToken);
         }
 
         Ok(SpaggiariSession {
@@ -122,7 +118,7 @@ impl SpaggiariSession {
     /// # Returns
     ///
     /// `true` se il token è valido, `false` altrimenti
-    pub async fn is_valid(&self) -> Result<bool, Box<dyn std::error::Error>> {
+    pub async fn is_valid(&self) -> Result<bool, SpaggiariError> {
         test_session_token(&self.client, &self.session_token, &self.identity).await
     }
 
@@ -139,7 +135,7 @@ impl SpaggiariSession {
     /// let bacheca = session.get_bacheca().unwrap();
     /// println!("Comunicazioni lette: {}", bacheca.read.len());
     /// ```
-    pub async fn get_bacheca(&self) -> Result<Bacheca, Box<dyn std::error::Error>> {
+    pub async fn get_bacheca(&self) -> Result<Bacheca, SpaggiariError> {
         Ok(get_backeca(&self.client, &self.session_token, &self.identity).await?)
     }
 
@@ -152,10 +148,7 @@ impl SpaggiariSession {
     /// # Returns
     ///
     /// La struttura `Comunicazione` con tutti i dettagli
-    pub async fn get_comunicazione(
-        &self,
-        circolare_id: &str,
-    ) -> Result<Comunicazione, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn get_comunicazione(&self, circolare_id: &str) -> Result<Comunicazione, SpaggiariError> {
         Ok(get_comunicazioni(&self.client, &self.session_token, circolare_id, "").await?)
     }
 
@@ -165,11 +158,7 @@ impl SpaggiariSession {
     ///
     /// * `allegati` - Lista degli allegati da scaricare
     /// * `folder_path` - Percorso della cartella dove salvare i file
-    pub async fn download_allegati(
-        &self,
-        allegati: &[Allegato],
-        folder_path: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn download_allegati(&self, allegati: &[Allegato], folder_path: &str) -> Result<(), SpaggiariError> {
         Ok(download_allegati(&self.client, &self.session_token, allegati, folder_path).await?)
     }
 
@@ -189,10 +178,7 @@ impl SpaggiariSession {
     /// let (filename, content) = session.download_file_bytes("https://...").await?;
     /// println!("Scaricato {} ({} bytes)", filename, content.len());
     /// ```
-    pub async fn download_file_bytes(
-        &self,
-        url: &str,
-    ) -> Result<(String, Vec<u8>), Box<dyn std::error::Error>> {
+    pub async fn download_file_bytes(&self, url: &str) -> Result<(String, Vec<u8>), SpaggiariError> {
         Ok(download_file_bytes(&self.client, url, &self.session_token).await?)
     }
 
@@ -215,10 +201,7 @@ impl SpaggiariSession {
     ///     println!("Scaricato {} ({} bytes)", filename, content.len());
     /// }
     /// ```
-    pub async fn download_allegati_bytes(
-        &self,
-        allegati: Vec<Allegato>,
-    ) -> Result<Vec<(String, Vec<u8>)>, Box<dyn std::error::Error>> {
+    pub async fn download_allegati_bytes(&self, allegati: Vec<Allegato>) -> Result<Vec<(String, Vec<u8>)>, SpaggiariError> {
         Ok(download_allegati_bytes(&self.client, &self.session_token, allegati).await?)
     }
 }

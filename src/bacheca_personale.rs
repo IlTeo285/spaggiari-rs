@@ -1,4 +1,4 @@
-use anyhow;
+use crate::error::SpaggiariError;
 use log::{debug, error};
 use regex::Regex;
 use reqwest::Client;
@@ -8,8 +8,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 const URL_BACHECA: &str = "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php";
-const URL_COMUNICAZIONI: &str =
-    "https://web.spaggiari.eu/sif/app/default/bacheca_comunicazione.php";
+const URL_COMUNICAZIONI: &str = "https://web.spaggiari.eu/sif/app/default/bacheca_comunicazione.php";
 
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -72,23 +71,16 @@ pub struct Bacheca {
 }
 
 // Nuova funzione per estrarre comunicazione_id e allegato_id dai tag <a class="dwl_allegato">
-pub fn extract_allegati(html: &str) -> Result<Vec<(String, String)>, anyhow::Error> {
+pub fn extract_allegati(html: &str) -> Result<Vec<(String, String)>, SpaggiariError> {
     let document = Html::parse_document(html);
-    let selector = Selector::parse("a.dwl_allegato")
-        .map_err(|e| anyhow::anyhow!("Errore nel parsing del selettore: {}", e))?;
+    let selector = Selector::parse("a.dwl_allegato").map_err(|e| SpaggiariError::ParseError {
+        details: format!("Errore nel parsing del selettore: {}", e),
+    })?;
 
     let mut allegati = Vec::new();
     for element in document.select(&selector) {
-        let comunicazione_id = element
-            .value()
-            .attr("comunicazione_id")
-            .unwrap_or("")
-            .to_string();
-        let allegato_id = element
-            .value()
-            .attr("allegato_id")
-            .unwrap_or("")
-            .to_string();
+        let comunicazione_id = element.value().attr("comunicazione_id").unwrap_or("").to_string();
+        let allegato_id = element.value().attr("allegato_id").unwrap_or("").to_string();
         allegati.push((comunicazione_id, allegato_id));
     }
 
@@ -96,56 +88,29 @@ pub fn extract_allegati(html: &str) -> Result<Vec<(String, String)>, anyhow::Err
 }
 
 // Nuova funzione per scaricare un file e ritornare il contenuto binario
-pub async fn download_file_bytes(
-    client: &Client,
-    url: &str,
-    session_id: &str,
-) -> Result<(String, Vec<u8>), anyhow::Error> {
-    let response = client
-        .get(url)
-        .header(
-            "Cookie",
-            format!("PHPSESSID={}; webidentity=G13070983V", session_id),
-        )
-        .send()
-        .await?;
+pub async fn download_file_bytes(client: &Client, url: &str, session_id: &str) -> Result<(String, Vec<u8>), SpaggiariError> {
+    let response = client.get(url).header("Cookie", format!("PHPSESSID={}; webidentity=G13070983V", session_id)).send().await?;
 
     if response.status().is_success() {
         // Estrai filename da Content-Disposition
-        let content_disposition = response
-            .headers()
-            .get("content-disposition")
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("");
-        let filename = extract_filename_from_disposition(content_disposition)
-            .unwrap_or_else(|| "file_sconosciuto".to_string());
+        let content_disposition = response.headers().get("content-disposition").and_then(|v| v.to_str().ok()).unwrap_or("");
+        let filename = extract_filename_from_disposition(content_disposition).unwrap_or_else(|| "file_sconosciuto".to_string());
 
         // Scarica il contenuto come bytes
         let bytes = response.bytes().await?;
-        debug!(
-            "📥 File scaricato in memoria: {} ({} bytes)",
-            filename,
-            bytes.len()
-        );
+        debug!("📥 File scaricato in memoria: {} ({} bytes)", filename, bytes.len());
 
         Ok((filename, bytes.to_vec()))
     } else {
-        error!(
-            "❌ Download fallito per {}: Status {}",
-            url,
-            response.status()
-        );
-        Err(anyhow::anyhow!("Download fallito: {}", response.status()))
+        error!("❌ Download fallito per {}: Status {}", url, response.status());
+        Err(SpaggiariError::ParseError {
+            details: format!("Download fallito: {}", response.status()),
+        })
     }
 }
 
 // Nuova funzione per scaricare un file da un URL
-pub async fn download_file(
-    client: &Client,
-    url: &str,
-    session_id: &str,
-    destination_path: &str,
-) -> Result<String, anyhow::Error> {
+pub async fn download_file(client: &Client, url: &str, session_id: &str, destination_path: &str) -> Result<String, SpaggiariError> {
     // Controlla se il file già esiste
     if std::path::Path::new(destination_path).exists() {
         debug!("📁 File già esistente, skip download: {}", destination_path);
@@ -154,22 +119,14 @@ pub async fn download_file(
 
     let response = client
         .get(url)
-        .header(
-            "Cookie",
-            format!("PHPSESSID={}; webidentity=G13070983V", session_id),
-        ) //TODO get from args
+        .header("Cookie", format!("PHPSESSID={}; webidentity=G13070983V", session_id)) //TODO get from args
         .send()
         .await?;
 
     if response.status().is_success() {
         // Estrai filename da Content-Disposition
-        let content_disposition = response
-            .headers()
-            .get("content-disposition")
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("");
-        let filename = extract_filename_from_disposition(content_disposition)
-            .unwrap_or_else(|| "file_sconosciuto".to_string());
+        let content_disposition = response.headers().get("content-disposition").and_then(|v| v.to_str().ok()).unwrap_or("");
+        let filename = extract_filename_from_disposition(content_disposition).unwrap_or_else(|| "file_sconosciuto".to_string());
 
         let filepath = format!("{}/{}", destination_path, filename); // destination_path è una directory, aggiungi il filename
                                                                      // Assicurati che la directory esista
@@ -183,12 +140,10 @@ pub async fn download_file(
         debug!("📥 File scaricato: {}", filepath);
         Ok(filepath)
     } else {
-        error!(
-            "❌ Download fallito per {}: Status {}",
-            url,
-            response.status()
-        );
-        Err(anyhow::anyhow!("Download fallito: {}", response.status()))
+        error!("❌ Download fallito per {}: Status {}", url, response.status());
+        Err(SpaggiariError::ParseError {
+            details: format!("Download fallito: {}", response.status()),
+        })
     }
 }
 
@@ -204,45 +159,27 @@ fn extract_filename_from_disposition(disposition: &str) -> Option<String> {
 }
 
 // Nuova funzione per scaricare tutti gli allegati
-pub async fn download_allegati(
-    client: &Client,
-    session_id: &str,
-    allegati: &[Allegato],
-    destination_path: &str,
-) -> Result<(), anyhow::Error> {
+pub async fn download_allegati(client: &Client, session_id: &str, allegati: &[Allegato], destination_path: &str) -> Result<(), SpaggiariError> {
     for allegato in allegati {
-        let download_url = format!(
-            "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php?action=file_download&com_id={}",
-            allegato.allegato_id
-        );
+        let download_url = format!("https://web.spaggiari.eu/sif/app/default/bacheca_personale.php?action=file_download&com_id={}", allegato.allegato_id);
         download_file(client, &download_url, session_id, destination_path).await?;
     }
     Ok(())
 }
 
 // Nuova funzione per scaricare tutti gli allegati in memoria
-pub async fn download_allegati_bytes(
-    client: &Client,
-    session_id: &str,
-    allegati: Vec<Allegato>,
-) -> Result<Vec<(String, Vec<u8>)>, anyhow::Error> {
+pub async fn download_allegati_bytes(client: &Client, session_id: &str, allegati: Vec<Allegato>) -> Result<Vec<(String, Vec<u8>)>, SpaggiariError> {
     let mut results = Vec::new();
 
     for allegato in allegati {
-        let download_url = format!(
-            "https://web.spaggiari.eu/sif/app/default/bacheca_personale.php?action=file_download&com_id={}",
-            allegato.allegato_id
-        );
+        let download_url = format!("https://web.spaggiari.eu/sif/app/default/bacheca_personale.php?action=file_download&com_id={}", allegato.allegato_id);
 
         match download_file_bytes(client, &download_url, session_id).await {
             Ok((filename, content)) => {
                 results.push((filename, content));
             }
             Err(e) => {
-                error!(
-                    "❌ Errore durante il download dell'allegato {}: {}",
-                    allegato.allegato_id, e
-                );
+                error!("❌ Errore durante il download dell'allegato {}: {}", allegato.allegato_id, e);
                 // Continua con gli altri allegati anche in caso di errore
             }
         }
@@ -251,18 +188,11 @@ pub async fn download_allegati_bytes(
     Ok(results)
 }
 
-pub async fn get_backeca(
-    client: &Client,
-    session_id: &str,
-    webidentity: &str,
-) -> Result<Bacheca, anyhow::Error> {
+pub async fn get_backeca(client: &Client, session_id: &str, webidentity: &str) -> Result<Bacheca, SpaggiariError> {
     let response = client
         .get(URL_BACHECA)
         .query(&[("action", "get_comunicazioni"), ("ncna", "1")]) // Aggiunti i form data come query parameters
-        .header(
-            "Cookie",
-            format!("PHPSESSID={}; webidentity={}", session_id, webidentity),
-        )
+        .header("Cookie", format!("PHPSESSID={}; webidentity={}", session_id, webidentity))
         .send()
         .await?;
 
@@ -286,15 +216,18 @@ pub async fn get_backeca(
         }
     } else {
         error!("❌ Il token non sembra funzionare. Status: {}", status);
-        Err(anyhow::anyhow!("Il token non sembra funzionare"))
+        Err(SpaggiariError::ParseError {
+            details: format!("Il token non sembra funzionare"),
+        })
     }
 }
 
 // Nuova funzione per estrarre il testo dalla comunicazione
-pub fn extract_testo_comunicazione(html: &str) -> Result<String, anyhow::Error> {
+pub fn extract_testo_comunicazione(html: &str) -> Result<String, SpaggiariError> {
     let document = Html::parse_document(html);
-    let selector = Selector::parse("div.comunicazione_testo")
-        .map_err(|e| anyhow::anyhow!("Errore nel parsing del selettore: {}", e))?;
+    let selector = Selector::parse("div.comunicazione_testo").map_err(|e| SpaggiariError::ParseError {
+        details: format!("Errore nel parsing del selettore: {}", e),
+    })?;
 
     if let Some(element) = document.select(&selector).next() {
         let testo = element.text().collect::<Vec<_>>().join(" ");
@@ -314,19 +247,11 @@ pub struct Comunicazione {
     pub allegati: Vec<Allegato>,
 }
 
-pub async fn get_comunicazioni(
-    client: &Client,
-    session_id: &str,
-    comm_id: &str,
-    webidentity: &str,
-) -> Result<Comunicazione, anyhow::Error> {
+pub async fn get_comunicazioni(client: &Client, session_id: &str, comm_id: &str, webidentity: &str) -> Result<Comunicazione, SpaggiariError> {
     let response = client
         .get(URL_COMUNICAZIONI)
         .query(&[("action", "risposta_com"), ("com_id", comm_id)]) // Aggiunti i form data come query parameters
-        .header(
-            "Cookie",
-            format!("PHPSESSID={}; webidentity={}", session_id, webidentity),
-        ) //TODO get from args
+        .header("Cookie", format!("PHPSESSID={}; webidentity={}", session_id, webidentity)) //TODO get from args
         .send()
         .await?;
 
@@ -357,6 +282,8 @@ pub async fn get_comunicazioni(
         })
     } else {
         error!("❌ Il token non sembra funzionare. Status: {}", status);
-        Err(anyhow::anyhow!("Il token non sembra funzionare"))
+        Err(SpaggiariError::ParseError {
+            details: format!("Il token non sembra funzionare"),
+        })
     }
 }

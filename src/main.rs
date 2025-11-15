@@ -1,17 +1,13 @@
-use spaggiari_rs::{
-    bacheca_personale::Circolare, create_client, test_session_token, SpaggiariSession,
-};
+use spaggiari_rs::{bacheca_personale::Circolare, create_client, test_session_token, SpaggiariError, SpaggiariSession};
 use std::env;
 use std::fs;
 use std::io::Write;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), SpaggiariError> {
     // Carica credenziali dalle variabili d'ambiente
-    let username = env::var("SPAGGIARI_USERNAME")
-        .map_err(|_| "Variabile d'ambiente SPAGGIARI_USERNAME non impostata")?;
-    let password = env::var("SPAGGIARI_PASSWORD")
-        .map_err(|_| "Variabile d'ambiente SPAGGIARI_PASSWORD non impostata")?;
+    let username = env::var("SPAGGIARI_USERNAME").map_err(|_| "Variabile d'ambiente SPAGGIARI_USERNAME non impostata")?;
+    let password = env::var("SPAGGIARI_PASSWORD").map_err(|_| "Variabile d'ambiente SPAGGIARI_PASSWORD non impostata")?;
 
     // 1) Controlla se esiste già un token salvato
     println!("🔍 Controllo se esiste un token salvato...");
@@ -70,15 +66,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // Nuova funzione per elaborare le comunicazioni usando la sessione
-async fn process_comunicazioni(
-    session: &SpaggiariSession,
-    circolari: &[Circolare],
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn process_comunicazioni(session: &SpaggiariSession, circolari: &[Circolare]) -> Result<(), SpaggiariError> {
     for circolare in circolari {
-        println!(
-            "📄 Elaborando comunicazione: {} (Codice: {})",
-            circolare.id, circolare.codice
-        );
+        println!("📄 Elaborando comunicazione: {} (Codice: {})", circolare.id, circolare.codice);
 
         // Ottieni la comunicazione
         let comunicazione = session.get_comunicazione(&circolare.id).await?;
@@ -94,9 +84,7 @@ async fn process_comunicazioni(
         println!("📝 README creato: {}", readme_path);
 
         // Scarica gli allegati nella sottocartella
-        session
-            .download_allegati(&comunicazione.allegati, &subfolder)
-            .await?;
+        session.download_allegati(&comunicazione.allegati, &subfolder).await?;
         println!("📂 Allegati scaricati in: {}", subfolder);
     }
     Ok(())
