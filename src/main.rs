@@ -2,25 +2,35 @@ use spaggiari_rs::{bacheca_personale::Circolare, create_client, test_session_tok
 use std::env;
 use std::fs;
 use std::io::Write;
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<(), SpaggiariError> {
+    // Inizializza tracing
+    tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).init();
+
     // Carica credenziali dalle variabili d'ambiente
-    let username = env::var("SPAGGIARI_USERNAME").map_err(|_| "Variabile d'ambiente SPAGGIARI_USERNAME non impostata")?;
-    let password = env::var("SPAGGIARI_PASSWORD").map_err(|_| "Variabile d'ambiente SPAGGIARI_PASSWORD non impostata")?;
+    let username = env::var("SPAGGIARI_USERNAME").map_err(|_| {
+        error!("❌ Variabile d'ambiente SPAGGIARI_USERNAME non impostata");
+        SpaggiariError::EnvVarError("SPAGGIARI_USERNAME".to_string())
+    })?;
+    let password = env::var("SPAGGIARI_PASSWORD").map_err(|_| {
+        error!("❌ Variabile d'ambiente SPAGGIARI_PASSWORD non impostata");
+        SpaggiariError::EnvVarError("SPAGGIARI_PASSWORD".to_string())
+    })?;
 
     // 1) Controlla se esiste già un token salvato
-    println!("🔍 Controllo se esiste un token salvato...");
+    info!("🔍 Controllo se esiste un token salvato...");
     if let Ok(existing_token) = std::fs::read_to_string("phpsessid.token") {
         let existing_token = existing_token.trim();
-        println!("📁 Token esistente trovato: {}", existing_token);
+        info!("📁 Token esistente trovato: {}", existing_token);
 
         // Prova a usare il token esistente
-        println!("🧪 Test del token esistente...");
+        info!("🧪 Test del token esistente...");
         let client = create_client()?;
         match test_session_token(&client, existing_token, &username).await {
             Ok(true) => {
-                println!("✅ Token esistente ancora valido! Uso quello.");
+                info!("✅ Token esistente ancora valido! Uso quello.");
 
                 // Crea una sessione dal token esistente
                 let session = SpaggiariSession::from_token(existing_token.to_string()).await?;
@@ -39,26 +49,31 @@ async fn main() -> Result<(), SpaggiariError> {
 
                 return Ok(());
             }
-            _ => {
-                println!("❌ Errore durante il test del token esistente");
+            Ok(false) => {
+                error!("❌ Token esistente non più valido, procedo con nuovo login");
+            }
+            Err(e) => {
+                error!("❌ Errore durante il test del token esistente: {}", e);
             }
         }
     } else {
-        println!("📁 Nessun token salvato trovato, procedo con il login...");
-        println!("\n🔐 Effettuo il login...");
-        match SpaggiariSession::new(&username, &password).await {
-            Ok(session) => {
-                println!("✅ Login completato con successo!");
+        info!("📁 Nessun token salvato trovato, procedo con il login...");
+    }
 
-                // Salva il token per la prossima volta
-                std::fs::write("phpsessid.txt", &session.session_token)?;
+    info!("🔐 Effettuo il login...");
+    match SpaggiariSession::new(&username, &password).await {
+        Ok(session) => {
+            info!("✅ Login completato con successo!");
 
-                println!("Riesegui il programma per continuare.");
-            }
-            Err(e) => {
-                println!("❌ Login fallito: {}", e);
-                return Err(e);
-            }
+            // Salva il token per la prossima volta
+            std::fs::write("phpsessid.txt", &session.session_token)?;
+            info!("💾 Token salvato in phpsessid.txt");
+
+            info!("Riesegui il programma per continuare.");
+        }
+        Err(e) => {
+            error!("❌ Login fallito: {}", e);
+            return Err(e);
         }
     }
 
@@ -68,7 +83,7 @@ async fn main() -> Result<(), SpaggiariError> {
 // Nuova funzione per elaborare le comunicazioni usando la sessione
 async fn process_comunicazioni(session: &SpaggiariSession, circolari: &[Circolare]) -> Result<(), SpaggiariError> {
     for circolare in circolari {
-        println!("📄 Elaborando comunicazione: {} (Codice: {})", circolare.id, circolare.codice);
+        info!("📄 Elaborando comunicazione: {} (Codice: {})", circolare.id, circolare.codice);
 
         // Ottieni la comunicazione
         let comunicazione = session.get_comunicazione(&circolare.id).await?;
@@ -81,11 +96,11 @@ async fn process_comunicazioni(session: &SpaggiariSession, circolari: &[Circolar
         let readme_path = format!("{}/README.txt", subfolder);
         let mut readme_file = fs::File::create(&readme_path)?;
         readme_file.write_all(comunicazione.testo.as_bytes())?;
-        println!("📝 README creato: {}", readme_path);
+        info!("📝 README creato: {}", readme_path);
 
         // Scarica gli allegati nella sottocartella
         session.download_allegati(&comunicazione.allegati, &subfolder).await?;
-        println!("📂 Allegati scaricati in: {}", subfolder);
+        info!("📂 Allegati scaricati in: {}", subfolder);
     }
     Ok(())
 }

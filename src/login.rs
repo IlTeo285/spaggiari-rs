@@ -1,5 +1,6 @@
 use reqwest::Client;
 use serde::Deserialize;
+use tracing::{debug, error, info, warn};
 
 use crate::bacheca_personale::get_backeca;
 use crate::error::SpaggiariError;
@@ -63,15 +64,15 @@ pub struct AccountInfo {
 
 // Funzione per testare se il token di sessione funziona
 pub async fn test_session_token(client: &Client, session_id: &str, webidentity: &str) -> Result<bool, SpaggiariError> {
-    println!("🧪 Testando il token PHPSESSID: {}", session_id);
+    info!("🧪 Testando il token PHPSESSID: {}", session_id);
     match get_backeca(client, session_id, webidentity).await {
         Ok(bacheca) => {
             let circolari_nuove = if let Some(ref msg_new) = bacheca.msg_new { msg_new.len() } else { 0 };
-            println!("✅ Token valido - Bacheca caricata con {} circolari lette e {} nuove", bacheca.read.len(), circolari_nuove);
+            info!("✅ Token valido - Bacheca caricata con {} circolari lette e {} nuove", bacheca.read.len(), circolari_nuove);
             Ok(true)
         }
         Err(e) => {
-            println!("❌ Token scaduto o non valido: {}", e);
+            warn!("❌ Token scaduto o non valido: {}", e);
             Ok(false)
         }
     }
@@ -82,11 +83,11 @@ pub async fn login(client: &Client, username: &str, password: &str) -> Result<St
     let login_action_url = "https://web.spaggiari.eu/auth-p7/app/default/AuthApi4.php?a=aLoginPwd";
 
     // 1) Prepara i dati del form
-    println!("🔐 Preparazione dati login per utente: {}", username);
+    info!("🔐 Preparazione dati login per utente: {}", username);
     let form_data = vec![("uid", username), ("pwd", password)];
 
     // 2) Invia il form
-    println!("📤 Invio credenziali a {}...", login_action_url);
+    info!("📤 Invio credenziali a {}...", login_action_url);
     let res = client.post(login_action_url).form(&form_data).send().await?;
 
     let final_url = res.url().clone();
@@ -95,8 +96,8 @@ pub async fn login(client: &Client, username: &str, password: &str) -> Result<St
     let response_text = res.text().await?;
 
     // 3) Analizza la risposta del login
-    println!("📥 Risposta ricevuta da: {}", final_url);
-    println!("📊 Status: {}", status);
+    info!("📥 Risposta ricevuta da: {}", final_url);
+    info!("📊 Status: {}", status);
 
     // 3.1) Estrai il PHPSESSID dai cookie della risposta di login
     let mut phpsessid = None;
@@ -105,7 +106,7 @@ pub async fn login(client: &Client, username: &str, password: &str) -> Result<St
     for (name, value) in &headers {
         if name.as_str().to_lowercase() == "set-cookie" {
             let cookie_str = value.to_str().unwrap_or("");
-            println!("🍪 Set-Cookie: {}", cookie_str);
+            debug!("🍪 Set-Cookie: {}", cookie_str);
 
             if cookie_str.starts_with("PHPSESSID=") {
                 // Estrai il valore del PHPSESSID
@@ -121,37 +122,38 @@ pub async fn login(client: &Client, username: &str, password: &str) -> Result<St
     }
 
     // 3.2) Analizza il payload JSON usando la struct
-    println!("\n📄 Analisi del payload JSON...");
+    debug!("📄 Analisi del payload JSON...");
 
     match serde_json::from_str::<LoginResponse>(&response_text) {
         Ok(login_resp) => {
-            println!("✅ Payload JSON deserializzato:");
-            println!("  - Ambiente: {}", login_resp.api.env);
-            println!("  - Versione AuthSpa: {}", login_resp.api.auth_spa.version);
-            println!("  - Logged in: {}", login_resp.data.auth.logged_in);
-            println!(
+            info!("✅ Payload JSON deserializzato:");
+            info!("  - Ambiente: {}", login_resp.api.env);
+            info!("  - Versione AuthSpa: {}", login_resp.api.auth_spa.version);
+            info!("  - Logged in: {}", login_resp.data.auth.logged_in);
+            info!(
                 "  - Account: {} {} (ID: {}, Tipo: {})",
                 login_resp.data.auth.account_info.nome, login_resp.data.auth.account_info.cognome, login_resp.data.auth.account_info.id, login_resp.data.auth.account_info.account_type
             );
-            println!("  - Tempo: {}", login_resp.time);
+            info!("  - Tempo: {}", login_resp.time);
 
             // Verifica se il login è riuscito
             if !login_resp.data.auth.logged_in {
+                error!("❌ Login fallito: logged_in = false");
                 return Err(SpaggiariError::AuthenticationFailed);
             }
 
             // Controlla errori
             if !login_resp.error.is_empty() {
-                println!("⚠️ Errori nella risposta: {:?}", login_resp.error);
+                warn!("⚠️ Errori nella risposta: {:?}", login_resp.error);
                 return Err(SpaggiariError::ApiError {
                     message: format!("Errori nella risposta: {:?}", login_resp.error),
                 });
             }
         }
         Err(e) => {
-            println!("❌ Errore nel parsing JSON: {}", e);
-            println!("📄 Primi 800 caratteri della risposta:");
-            println!("{}", &response_text[..response_text.len().min(800)]);
+            error!("❌ Errore nel parsing JSON: {}", e);
+            debug!("📄 Primi 800 caratteri della risposta:");
+            debug!("{}", &response_text[..response_text.len().min(800)]);
             // Procedi comunque se abbiamo il PHPSESSID
         }
     }
@@ -159,25 +161,25 @@ pub async fn login(client: &Client, username: &str, password: &str) -> Result<St
     // 4) Restituisci il PHPSESSID se trovato
     match phpsessid {
         Some(session_id) => {
-            println!("✅ PHPSESSID estratto: {}", session_id);
+            info!("✅ PHPSESSID estratto: {}", session_id);
 
             // Salva il token in un file per uso futuro
             std::fs::write("phpsessid.token", &session_id)?;
-            println!("� Token salvato in phpsessid.token");
+            info!("💾 Token salvato in phpsessid.token");
 
             Ok(session_id)
         }
         None => {
-            println!("❌ PHPSESSID non trovato nei cookie della risposta di login!");
-            println!("🔍 Questo potrebbe significare che:");
-            println!("  - Il login non è riuscito");
-            println!("  - Il server non imposta PHPSESSID in questa risposta");
-            println!("  - I cookie sono impostati in un header diverso");
+            error!("❌ PHPSESSID non trovato nei cookie della risposta di login!");
+            warn!("🔍 Questo potrebbe significare che:");
+            warn!("  - Il login non è riuscito");
+            warn!("  - Il server non imposta PHPSESSID in questa risposta");
+            warn!("  - I cookie sono impostati in un header diverso");
 
             // Mostra tutti gli header per debug
-            println!("\n🔍 Tutti gli header della risposta:");
+            debug!("🔍 Tutti gli header della risposta:");
             for (name, value) in &headers {
-                println!("{}: {}", name, value.to_str().unwrap_or("[non-UTF8]"));
+                debug!("{}: {}", name, value.to_str().unwrap_or("[non-UTF8]"));
             }
 
             Err(SpaggiariError::AuthenticationFailed)
