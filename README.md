@@ -1,199 +1,159 @@
 # Spaggiari RS
 
-Una libreria Rust per interagire con il portale Spaggiari (Registro Elettronico).
+Una libreria Rust e CLI per interagire con il portale Spaggiari (Registro Elettronico).
 
 ## Caratteristiche
 
 - ✅ Login al portale Spaggiari
-- ✅ Gestione sessioni e token
+- ✅ Gestione sessioni e token (salvataggio automatico)
 - ✅ Accesso alla bacheca personale
-- ✅ Download delle comunicazioni
-- ✅ Download degli allegati
-- ✅ Gestione automatica dei cookies
+- ✅ Elenco circolari (lette e nuove)
+- ✅ Visualizzazione dettagli circolari
+- ✅ Download delle comunicazioni e degli allegati
+- ✅ Supporto file `.env` per le credenziali
 
-## Installazione
+## CLI (Command Line Interface)
 
-Aggiungi questa libreria al tuo `Cargo.toml`:
+Il progetto include un potente strumento da riga di comando per interagire con il registro elettronico.
+
+### Installazione ed Esecuzione
+
+Puoi eseguire la CLI direttamente tramite `cargo`:
+
+```bash
+cargo run -- <COMANDO> [OPZIONI]
+```
+
+Oppure compilarla:
+
+```bash
+cargo build --release --bin spaggiari-cli
+./target/release/spaggiari-cli <COMANDO>
+```
+
+### Configurazione
+
+La CLI supporta il caricamento delle credenziali da un file `.env` nella directory corrente.
+
+Crea un file `.env`:
+```env
+SPAGGIARI_USERNAME=tuo_codice
+SPAGGIARI_PASSWORD=tua_password
+```
+
+In alternativa, puoi passare le credenziali direttamente al comando `login` o impostare le variabili d'ambiente nel tuo sistema.
+
+### Comandi Disponibili
+
+#### 1. Login
+Effettua il login e salva il token di sessione localmente (`phpsessid.token`).
+
+```bash
+# Usa credenziali da .env o variabili d'ambiente
+cargo run -- login
+
+# Oppure passa le credenziali esplicitamente
+cargo run -- login --username <USER> --password <PASS>
+```
+
+#### 2. Verifica Token
+Controlla se il token salvato è ancora valido.
+
+```bash
+cargo run -- check-token
+```
+
+#### 3. Elenco Circolari
+Mostra l'elenco delle circolari presenti in bacheca (sia nuove che lette) con i relativi ID.
+
+```bash
+cargo run -- list
+```
+*Output esempio:*
+```text
+📋 Elenco Circolari:
+---------------------------------------------------
+🆕 ID: 12345 - Circolare Importante
+✅ ID: 67890 - Orario Lezioni
+---------------------------------------------------
+```
+
+#### 4. Dettagli Circolare
+Mostra il testo completo e gli allegati di una specifica circolare. Richiede l'ID della circolare (ottenibile con `list`).
+
+```bash
+cargo run -- details --code <ID_CIRCOLARE>
+```
+
+#### 5. Download
+Scarica tutte le comunicazioni e i relativi allegati nella cartella `download/`.
+
+```bash
+cargo run -- download
+```
+Verrà creata una struttura di cartelle organizzata per codice circolare.
+
+---
+
+## Utilizzo come Libreria Rust
+
+Puoi usare `spaggiari-rs` anche come libreria nel tuo progetto Rust.
+
+### Installazione
+
+Aggiungi al tuo `Cargo.toml`:
 
 ```toml
 [dependencies]
-spaggiari-rs = "0.1.0"
+spaggiari-rs = { git = "https://github.com/IlTeo285/spaggiari-rs" }
 ```
 
-## Configurazione
+### Esempio di utilizzo
 
-Prima di utilizzare la libreria, devi impostare le seguenti variabili d'ambiente:
-
-```bash
-export SPAGGIARI_USERNAME="tuo_codice_fiscale"
-export SPAGGIARI_PASSWORD="tua_password"
-```
-
-### Configurazione rapida
-
-1. Copia il file di esempio:
-
-```bash
-cp .env.example .env
-```
-
-2. Modifica `.env` con le tue credenziali reali
-
-3. Carica le variabili d'ambiente:
-
-```bash
-source .env
-```
-
-### Su Linux/macOS
-
-```bash
-echo 'export SPAGGIARI_USERNAME="tuo_codice_fiscale"' >> ~/.bashrc
-echo 'export SPAGGIARI_PASSWORD="tua_password"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### Su Windows
-
-```cmd
-set SPAGGIARI_USERNAME=tuo_codice_fiscale
-set SPAGGIARI_PASSWORD=tua_password
-```
-
-### Su Windows (variabili permanenti)
-
-```cmd
-setx SPAGGIARI_USERNAME "tuo_codice_fiscale"
-setx SPAGGIARI_PASSWORD "tua_password"
-```
-
-## Utilizzo
-
-### Esempio base
-
-````rust
+```rust
 use spaggiari_rs::SpaggiariSession;
 use std::env;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Carica credenziali dalle variabili d'ambiente
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Login
     let username = env::var("SPAGGIARI_USERNAME")?;
     let password = env::var("SPAGGIARI_PASSWORD")?;
+    let session = SpaggiariSession::new(&username, &password).await?;
 
-    // Crea una nuova sessione con login
-    let session = SpaggiariSession::new(&username, &password)?;
+    // 2. Ottieni la bacheca
+    let bacheca = session.get_bacheca().await?;
+    println!("Trovate {} comunicazioni lette", bacheca.read.len());
 
-    // Ottieni la bacheca
-    let bacheca = session.get_bacheca()?;
-    println!("Trovate {} comunicazioni", bacheca.read.len());
+    // 3. Leggi una comunicazione specifica
+    if let Some(circolare) = bacheca.read.first() {
+        let dettagli = session.get_comunicazione(&circolare.id).await?;
+        println!("Testo: {}", dettagli.testo);
+    }
 
     Ok(())
 }
-```### Uso di un token esistente
-
-```rust
-use spaggiari_rs::SpaggiariSession;
-
-// Se hai già un token salvato
-let session = SpaggiariSession::from_token("token_esistente".to_string())?;
-
-// Verifica se è ancora valido
-if session.is_valid()? {
-    println!("Token valido!");
-    let bacheca = session.get_bacheca()?;
-    // ... usa la bacheca
-}
-````
-
-### Configurazione manuale del client
-
-```rust
-use spaggiari_rs::{create_client, login::login, bacheca_personale::get_backeca};
-
-let client = create_client()?;
-let token = login(&client, "username", "password")?;
-let bacheca = get_backeca(&client, &token)?;
 ```
 
-## API
+## Sviluppo
 
-### SpaggiariSession
+### Requisiti
+- Rust (latest stable)
+- OpenSSL (`libssl-dev` su Ubuntu/Debian)
 
-La struttura principale per gestire una sessione autenticata.
-
-#### Metodi
-
-- `new(username, password)` - Crea una nuova sessione con login
-- `from_token(token)` - Crea una sessione da un token esistente
-- `is_valid()` - Verifica se il token è ancora valido
-- `get_bacheca()` - Ottiene la bacheca personale
-- `get_comunicazione(id)` - Ottiene una comunicazione specifica
-- `download_allegati(allegati, folder)` - Scarica gli allegati
-
-### Strutture dati
-
-#### Bacheca
-
-```rust
-pub struct Bacheca {
-    pub read: Vec<Circolare>,
-    pub msg_new: Option<Vec<Circolare>>,
-}
-```
-
-#### Circolare
-
-```rust
-pub struct Circolare {
-    pub id: String,
-    pub codice: i32,
-    pub titolo: String,
-    pub data_start: String,
-    pub data_stop: String,
-    // ... altri campi
-}
-```
-
-#### Comunicazione
-
-```rust
-pub struct Comunicazione {
-    pub id: String,
-    pub testo: String,
-    pub allegati: Vec<Allegato>,
-    // ... altri campi
-}
-```
-
-## Esempi
-
-Guarda la cartella `examples/` per esempi completi di utilizzo.
-
-## CLI
-
-Il progetto include anche un'applicazione CLI che puoi eseguire con:
+### Comandi utili
 
 ```bash
-cargo run --bin spaggiari-cli
-```
-
-## Compilazione
-
-```bash
-# Compila la libreria
+# Compila tutto
 cargo build
 
 # Esegui i test
 cargo test
 
-# Compila la CLI
-cargo build --bin spaggiari-cli
+# Check del codice
+cargo check
 ```
 
 ## Licenza
 
 MIT
-
-## Contributi
-
-I contributi sono benvenuti! Apri pure issue e pull requests

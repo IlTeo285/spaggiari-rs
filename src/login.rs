@@ -62,7 +62,22 @@ pub struct AccountInfo {
     pub account_type: String, // "type" è una parola riservata in Rust, rinominata
 }
 
-// Funzione per testare se il token di sessione funziona
+/// Verifica se il token di sessione fornito è ancora valido.
+///
+/// Questa funzione tenta di accedere alla bacheca personale utilizzando il token di sessione.
+/// Se l'accesso ha successo, il token è considerato valido.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP da utilizzare per la richiesta.
+/// * `session_id` - L'ID di sessione (PHPSESSID) da verificare.
+/// * `webidentity` - L'identità web associata alla sessione.
+///
+/// # Restituisce
+///
+/// * `Ok(true)` se il token è valido.
+/// * `Ok(false)` se il token non è valido o è scaduto.
+/// * `Err(SpaggiariError)` se si verifica un errore durante la verifica.
 pub async fn test_session_token(client: &Client, session_id: &str, webidentity: &str) -> Result<bool, SpaggiariError> {
     info!("🧪 Testando il token PHPSESSID: {}", session_id);
     match get_backeca(client, session_id, webidentity).await {
@@ -78,7 +93,22 @@ pub async fn test_session_token(client: &Client, session_id: &str, webidentity: 
     }
 }
 
-// Funzione per effettuare il login e restituire la session_id
+/// Effettua il login al servizio Spaggiari e restituisce l'ID di sessione.
+///
+/// Questa funzione invia le credenziali fornite all'endpoint di autenticazione.
+/// Se il login ha successo, estrae il `PHPSESSID` dai cookie della risposta e lo restituisce.
+/// Inoltre, salva il token in un file locale `phpsessid.token`.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP da utilizzare per la richiesta.
+/// * `username` - Il nome utente per il login.
+/// * `password` - La password per il login.
+///
+/// # Restituisce
+///
+/// * `Ok(String)` contenente il `PHPSESSID` se il login ha successo.
+/// * `Err(SpaggiariError)` se il login fallisce o se si verifica un errore di rete/parsing.
 pub async fn login(client: &Client, username: &str, password: &str) -> Result<String, SpaggiariError> {
     let login_action_url = "https://web.spaggiari.eu/auth-p7/app/default/AuthApi4.php?a=aLoginPwd";
 

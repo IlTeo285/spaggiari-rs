@@ -2,3 +2,5 @@
 /download
 **/*.csv
 .env
+
+*.token

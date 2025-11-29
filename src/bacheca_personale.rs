@@ -70,7 +70,15 @@ pub struct Bacheca {
     pub msg_new: Option<Vec<Circolare>>,
 }
 
-// Nuova funzione per estrarre comunicazione_id e allegato_id dai tag <a class="dwl_allegato">
+/// Estrae gli ID delle comunicazioni e degli allegati dall'HTML.
+///
+/// # Argomenti
+///
+/// * `html` - Il contenuto HTML da analizzare.
+///
+/// # Restituisce
+///
+/// * `Ok(Vec<(String, String)>)` contenente coppie di (comunicazione_id, allegato_id).
 pub fn extract_allegati(html: &str) -> Result<Vec<(String, String)>, SpaggiariError> {
     let document = Html::parse_document(html);
     let selector = Selector::parse("a.dwl_allegato").map_err(|e| SpaggiariError::ParseError {
@@ -87,7 +95,17 @@ pub fn extract_allegati(html: &str) -> Result<Vec<(String, String)>, SpaggiariEr
     Ok(allegati)
 }
 
-// Nuova funzione per scaricare un file e ritornare il contenuto binario
+/// Scarica un singolo file e ne restituisce il contenuto in memoria.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP.
+/// * `url` - L'URL del file da scaricare.
+/// * `session_id` - L'ID di sessione.
+///
+/// # Restituisce
+///
+/// * `Ok((String, Vec<u8>))` contenente il nome del file e il suo contenuto in bytes.
 pub async fn download_file_bytes(client: &Client, url: &str, session_id: &str) -> Result<(String, Vec<u8>), SpaggiariError> {
     let response = client.get(url).header("Cookie", format!("PHPSESSID={}; webidentity=G13070983V", session_id)).send().await?;
 
@@ -109,7 +127,18 @@ pub async fn download_file_bytes(client: &Client, url: &str, session_id: &str) -
     }
 }
 
-// Nuova funzione per scaricare un file da un URL
+/// Scarica un singolo file e lo salva nel percorso specificato.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP.
+/// * `url` - L'URL del file da scaricare.
+/// * `session_id` - L'ID di sessione.
+/// * `destination_path` - La cartella di destinazione.
+///
+/// # Restituisce
+///
+/// * `Ok(String)` contenente il percorso completo del file salvato.
 pub async fn download_file(client: &Client, url: &str, session_id: &str, destination_path: &str) -> Result<String, SpaggiariError> {
     // Controlla se il file già esiste
     if std::path::Path::new(destination_path).exists() {
@@ -158,7 +187,14 @@ fn extract_filename_from_disposition(disposition: &str) -> Option<String> {
         .into()
 }
 
-// Nuova funzione per scaricare tutti gli allegati
+/// Scarica tutti gli allegati specificati nella cartella di destinazione.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP.
+/// * `session_id` - L'ID di sessione.
+/// * `allegati` - Una slice di `Allegato` da scaricare.
+/// * `destination_path` - Il percorso della cartella dove salvare i file.
 pub async fn download_allegati(client: &Client, session_id: &str, allegati: &[Allegato], destination_path: &str) -> Result<(), SpaggiariError> {
     for allegato in allegati {
         let download_url = format!("https://web.spaggiari.eu/sif/app/default/bacheca_personale.php?action=file_download&com_id={}", allegato.allegato_id);
@@ -167,7 +203,17 @@ pub async fn download_allegati(client: &Client, session_id: &str, allegati: &[Al
     Ok(())
 }
 
-// Nuova funzione per scaricare tutti gli allegati in memoria
+/// Scarica tutti gli allegati specificati e restituisce il loro contenuto in memoria.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP.
+/// * `session_id` - L'ID di sessione.
+/// * `allegati` - Un vettore di `Allegato` da scaricare.
+///
+/// # Restituisce
+///
+/// * `Ok(Vec<(String, Vec<u8>)>)` contenente coppie di (nome file, contenuto).
 pub async fn download_allegati_bytes(client: &Client, session_id: &str, allegati: Vec<Allegato>) -> Result<Vec<(String, Vec<u8>)>, SpaggiariError> {
     let mut results = Vec::new();
 
@@ -188,6 +234,17 @@ pub async fn download_allegati_bytes(client: &Client, session_id: &str, allegati
     Ok(results)
 }
 
+/// Recupera la bacheca personale dell'utente.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP.
+/// * `session_id` - L'ID di sessione.
+/// * `webidentity` - L'identità web.
+///
+/// # Restituisce
+///
+/// * `Ok(Bacheca)` contenente le circolari lette e nuove.
 pub async fn get_backeca(client: &Client, session_id: &str, webidentity: &str) -> Result<Bacheca, SpaggiariError> {
     let response = client
         .get(URL_BACHECA)
@@ -222,7 +279,15 @@ pub async fn get_backeca(client: &Client, session_id: &str, webidentity: &str) -
     }
 }
 
-// Nuova funzione per estrarre il testo dalla comunicazione
+/// Estrae il testo di una comunicazione dall'HTML.
+///
+/// # Argomenti
+///
+/// * `html` - Il contenuto HTML della pagina della comunicazione.
+///
+/// # Restituisce
+///
+/// * `Ok(String)` contenente il testo della comunicazione.
 pub fn extract_testo_comunicazione(html: &str) -> Result<String, SpaggiariError> {
     let document = Html::parse_document(html);
     let selector = Selector::parse("div.comunicazione_testo").map_err(|e| SpaggiariError::ParseError {
@@ -247,6 +312,18 @@ pub struct Comunicazione {
     pub allegati: Vec<Allegato>,
 }
 
+/// Recupera i dettagli di una specifica comunicazione.
+///
+/// # Argomenti
+///
+/// * `client` - Il client HTTP.
+/// * `session_id` - L'ID di sessione.
+/// * `comm_id` - L'ID della comunicazione.
+/// * `webidentity` - L'identità web.
+///
+/// # Restituisce
+///
+/// * `Ok(Comunicazione)` contenente il testo e gli allegati della comunicazione.
 pub async fn get_comunicazioni(client: &Client, session_id: &str, comm_id: &str, webidentity: &str) -> Result<Comunicazione, SpaggiariError> {
     let response = client
         .get(URL_COMUNICAZIONI)
